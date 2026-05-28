@@ -1,0 +1,96 @@
+{
+  "common": {
+    "cancel": "Cancelar",
+    "clear": "Borrar",
+    "done": "Listo",
+    "error": "Error"
+  },
+  "tabs": {
+    "home": "Inicio",
+    "search": "Buscar",
+    "following": "Siguiendo",
+    "library": "Biblioteca",
+    "settings": "Ajustes"
+  },
+  "onboarding": {
+    "message": "Bienvenido a la aplicación obytes"
+  },
+  "settings": {
+    "about": "Acerca de",
+    "app_lock": "Bloqueo de app",
+    "app_name": "Nombre de la app",
+    "auto_lock_after": "Bloqueo automático tras",
+    "bottom_tabs": "Pestañas inferiores",
+    "bottom_tabs_desc": "Inicio y Ajustes siempre son visibles.",
+    "cache_cleared": "Caché de imágenes borrada.",
+    "clear_cache": "Borrar caché de imágenes",
+    "clear_cache_failed": "Error al borrar la caché de imágenes.",
+    "clear_downloaded": "Borrar descargas",
+    "clear_downloads": "Borrar todas las descargas",
+    "clear_downloads_failed": "Error al borrar las descargas.",
+    "clear_downloads_msg": "¿Eliminar todos los videos descargados? Esto no se puede deshacer.",
+    "clear_downloads_title": "Borrar descargas",
+    "data_storage": "Datos y almacenamiento",
+    "general": "General",
+    "github": "Github",
+    "hide_preview": "Ocultar vista previa",
+    "hide_preview_desc": "Oculta la app en el selector de apps recientes.",
+    "immediately": "Inmediatamente",
+    "language": "Idioma",
+    "links": "Enlaces",
+    "logout": "Cerrar sesión",
+    "minute_1": "1 minuto",
+    "minutes_5": "5 minutos",
+    "more": "Más",
+    "orientation": "Orientación",
+    "orientation_desc": "Filtra cada lista (inicio / búsqueda / etiquetas) por orientación. Ninguna seleccionada = Todas.",
+    "privacy": "Política de privacidad",
+    "privacy_security": "Privacidad y seguridad",
+    "rate": "Calificar",
+    "seconds_5": "5 segundos",
+    "seconds_30": "30 segundos",
+    "share": "Compartir",
+    "show_all": "Mostrar todo",
+    "support": "Soporte",
+    "support_us": "Apóyanos",
+    "terms": "Términos del servicio",
+    "theme": {
+      "dark": "Oscuro",
+      "light": "Claro",
+      "system": "Sistema",
+      "title": "Tema"
+    },
+    "title": "Ajustes",
+    "version": "Versión",
+    "website": "Sitio web",
+    "wifi_only": "Descargas solo por Wi-Fi"
+  },
+  "search": {
+    "title": "Buscar",
+    "placeholder": "Buscar videos...",
+    "history": "Búsquedas recientes",
+    "clear_history": "Borrar historial",
+    "hot_tags": "Etiquetas populares",
+    "no_results": "No se encontraron resultados",
+    "searching": "Buscando..."
+  },
+  "library": {
+    "title": "Biblioteca"
+  },
+  "favorites": {
+    "title": "Favoritos",
+    "empty": "Aún no hay favoritos"
+  },
+  "history": {
+    "title": "Historial",
+    "empty": "Sin historial de reproducción",
+    "clear_all": "Borrar todo"
+  },
+  "following": {
+    "title": "Siguiendo",
+    "empty": "No sigues a nadie",
+    "unfollow": "Dejar de seguir",
+    "follow": "Seguir"
+  },
+  "welcome": "Bienvenido a la aplicación obytes"
+}

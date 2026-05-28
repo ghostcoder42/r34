@@ -1,0 +1,7 @@
+{
+  "name": "app-icon",
+  "version": "1.0.0",
+  "description": "Local Expo module for switching the app icon at runtime.",
+  "main": "index.ts",
+  "sideEffects": false
+}

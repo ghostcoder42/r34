@@ -1,0 +1,96 @@
+{
+  "common": {
+    "cancel": "取消",
+    "clear": "清除",
+    "done": "完成",
+    "error": "錯誤"
+  },
+  "tabs": {
+    "home": "首頁",
+    "search": "搜尋",
+    "following": "追蹤",
+    "library": "媒體庫",
+    "settings": "設定"
+  },
+  "onboarding": {
+    "message": "歡迎使用 obytes 應用"
+  },
+  "settings": {
+    "about": "關於",
+    "app_lock": "應用鎖",
+    "app_name": "應用名稱",
+    "auto_lock_after": "自動鎖定於",
+    "bottom_tabs": "底部標籤",
+    "bottom_tabs_desc": "首頁和設定始終顯示。",
+    "cache_cleared": "圖片快取已清除。",
+    "clear_cache": "清除圖片快取",
+    "clear_cache_failed": "清除圖片快取失敗。",
+    "clear_downloaded": "清除已下載",
+    "clear_downloads": "清除所有下載",
+    "clear_downloads_failed": "清除下載失敗。",
+    "clear_downloads_msg": "刪除所有已下載的影片?此操作無法復原。",
+    "clear_downloads_title": "清除下載",
+    "data_storage": "資料與儲存",
+    "general": "一般",
+    "github": "Github",
+    "hide_preview": "隱藏預覽",
+    "hide_preview_desc": "在最近任務切換器中隱藏應用內容。",
+    "immediately": "立即",
+    "language": "語言",
+    "links": "連結",
+    "logout": "登出",
+    "minute_1": "1 分鐘",
+    "minutes_5": "5 分鐘",
+    "more": "更多",
+    "orientation": "取向",
+    "orientation_desc": "依取向篩選所有列表(首頁 / 搜尋 / 標籤)。不選 = 全部。",
+    "privacy": "隱私權政策",
+    "privacy_security": "隱私與安全",
+    "rate": "評分",
+    "seconds_5": "5 秒",
+    "seconds_30": "30 秒",
+    "share": "分享",
+    "show_all": "顯示全部",
+    "support": "支援",
+    "support_us": "支援我們",
+    "terms": "服務條款",
+    "theme": {
+      "dark": "深色",
+      "light": "淺色",
+      "system": "跟隨系統",
+      "title": "主題"
+    },
+    "title": "設定",
+    "version": "版本",
+    "website": "網站",
+    "wifi_only": "僅 Wi-Fi 下載"
+  },
+  "search": {
+    "title": "搜尋",
+    "placeholder": "搜尋影片...",
+    "history": "最近搜尋",
+    "clear_history": "清除紀錄",
+    "hot_tags": "熱門標籤",
+    "no_results": "找不到結果",
+    "searching": "搜尋中..."
+  },
+  "library": {
+    "title": "媒體庫"
+  },
+  "favorites": {
+    "title": "收藏",
+    "empty": "尚無收藏"
+  },
+  "history": {
+    "title": "歷史",
+    "empty": "尚無觀看紀錄",
+    "clear_all": "全部清除"
+  },
+  "following": {
+    "title": "追蹤",
+    "empty": "尚未追蹤任何人",
+    "unfollow": "取消追蹤",
+    "follow": "追蹤"
+  },
+  "welcome": "歡迎使用 obytes 應用"
+}

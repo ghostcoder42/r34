@@ -1,0 +1,96 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "clear": "Clear",
+    "done": "Done",
+    "error": "Error"
+  },
+  "tabs": {
+    "home": "Home",
+    "search": "Search",
+    "following": "Following",
+    "library": "Library",
+    "settings": "Settings"
+  },
+  "onboarding": {
+    "message": "Welcome to obytes app site"
+  },
+  "settings": {
+    "about": "About",
+    "app_lock": "App Lock",
+    "app_name": "App Name",
+    "auto_lock_after": "Auto-Lock After",
+    "bottom_tabs": "Bottom Tabs",
+    "bottom_tabs_desc": "Home and Settings are always visible.",
+    "cache_cleared": "Image cache cleared.",
+    "clear_cache": "Clear Image Cache",
+    "clear_cache_failed": "Failed to clear image cache.",
+    "clear_downloaded": "Clear Downloaded",
+    "clear_downloads": "Clear All Downloads",
+    "clear_downloads_failed": "Failed to clear downloads.",
+    "clear_downloads_msg": "Delete all downloaded videos? This cannot be undone.",
+    "clear_downloads_title": "Clear Downloads",
+    "data_storage": "Data & Storage",
+    "general": "General",
+    "github": "Github",
+    "hide_preview": "Hide Preview",
+    "hide_preview_desc": "Blank the app in the recent-apps switcher.",
+    "immediately": "Immediately",
+    "language": "Language",
+    "links": "Links",
+    "logout": "Logout",
+    "minute_1": "1 minute",
+    "minutes_5": "5 minutes",
+    "more": "More",
+    "orientation": "Orientation",
+    "orientation_desc": "Filters every list (home / search / tags) by orientation. None selected = All.",
+    "privacy": "Privacy Policy",
+    "privacy_security": "Privacy & Security",
+    "rate": "Rate",
+    "seconds_5": "5 seconds",
+    "seconds_30": "30 seconds",
+    "share": "Share",
+    "show_all": "Show All",
+    "support": "Support",
+    "support_us": "Support Us",
+    "terms": "Terms of Service",
+    "theme": {
+      "dark": "Dark",
+      "light": "Light",
+      "system": "System",
+      "title": "Theme"
+    },
+    "title": "Settings",
+    "version": "Version",
+    "website": "Website",
+    "wifi_only": "WiFi Only Downloads"
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search videos...",
+    "history": "Recent Searches",
+    "clear_history": "Clear History",
+    "hot_tags": "Popular Tags",
+    "no_results": "No results found",
+    "searching": "Searching..."
+  },
+  "library": {
+    "title": "Library"
+  },
+  "favorites": {
+    "title": "Favorites",
+    "empty": "No favorites yet"
+  },
+  "history": {
+    "title": "History",
+    "empty": "No watch history",
+    "clear_all": "Clear All"
+  },
+  "following": {
+    "title": "Following",
+    "empty": "Not following anyone",
+    "unfollow": "Unfollow",
+    "follow": "Follow"
+  },
+  "welcome": "Welcome to obytes app site"
+}

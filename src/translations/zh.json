@@ -1,0 +1,96 @@
+{
+  "common": {
+    "cancel": "取消",
+    "clear": "清除",
+    "done": "完成",
+    "error": "错误"
+  },
+  "tabs": {
+    "home": "首页",
+    "search": "搜索",
+    "following": "关注",
+    "library": "媒体库",
+    "settings": "设置"
+  },
+  "onboarding": {
+    "message": "欢迎使用 obytes 应用"
+  },
+  "settings": {
+    "about": "关于",
+    "app_lock": "应用锁",
+    "app_name": "应用名称",
+    "auto_lock_after": "自动锁定于",
+    "bottom_tabs": "底部标签",
+    "bottom_tabs_desc": "首页和设置始终显示。",
+    "cache_cleared": "图片缓存已清除。",
+    "clear_cache": "清除图片缓存",
+    "clear_cache_failed": "清除图片缓存失败。",
+    "clear_downloaded": "清除已下载",
+    "clear_downloads": "清除所有下载",
+    "clear_downloads_failed": "清除下载失败。",
+    "clear_downloads_msg": "删除所有已下载的视频?此操作无法撤销。",
+    "clear_downloads_title": "清除下载",
+    "data_storage": "数据与存储",
+    "general": "通用",
+    "github": "Github",
+    "hide_preview": "隐藏预览",
+    "hide_preview_desc": "在最近任务切换器中隐藏应用内容。",
+    "immediately": "立即",
+    "language": "语言",
+    "links": "链接",
+    "logout": "退出登录",
+    "minute_1": "1 分钟",
+    "minutes_5": "5 分钟",
+    "more": "更多",
+    "orientation": "取向",
+    "orientation_desc": "按取向筛选所有列表(首页 / 搜索 / 标签)。不选 = 全部。",
+    "privacy": "隐私政策",
+    "privacy_security": "隐私与安全",
+    "rate": "评分",
+    "seconds_5": "5 秒",
+    "seconds_30": "30 秒",
+    "share": "分享",
+    "show_all": "显示全部",
+    "support": "支持",
+    "support_us": "支持我们",
+    "terms": "服务条款",
+    "theme": {
+      "dark": "深色",
+      "light": "浅色",
+      "system": "跟随系统",
+      "title": "主题"
+    },
+    "title": "设置",
+    "version": "版本",
+    "website": "网站",
+    "wifi_only": "仅 WiFi 下载"
+  },
+  "search": {
+    "title": "搜索",
+    "placeholder": "搜索视频...",
+    "history": "最近搜索",
+    "clear_history": "清除历史",
+    "hot_tags": "热门标签",
+    "no_results": "未找到结果",
+    "searching": "搜索中..."
+  },
+  "library": {
+    "title": "媒体库"
+  },
+  "favorites": {
+    "title": "收藏",
+    "empty": "暂无收藏"
+  },
+  "history": {
+    "title": "历史",
+    "empty": "暂无观看历史",
+    "clear_all": "全部清除"
+  },
+  "following": {
+    "title": "关注",
+    "empty": "未关注任何人",
+    "unfollow": "取消关注",
+    "follow": "关注"
+  },
+  "welcome": "欢迎使用 obytes 应用"
+}

@@ -1,0 +1,96 @@
+{
+  "common": {
+    "cancel": "キャンセル",
+    "clear": "クリア",
+    "done": "完了",
+    "error": "エラー"
+  },
+  "tabs": {
+    "home": "ホーム",
+    "search": "検索",
+    "following": "フォロー",
+    "library": "ライブラリ",
+    "settings": "設定"
+  },
+  "onboarding": {
+    "message": "obytes アプリへようこそ"
+  },
+  "settings": {
+    "about": "概要",
+    "app_lock": "アプリロック",
+    "app_name": "アプリ名",
+    "auto_lock_after": "自動ロックの時間",
+    "bottom_tabs": "ボトムタブ",
+    "bottom_tabs_desc": "ホームと設定は常に表示されます。",
+    "cache_cleared": "画像キャッシュをクリアしました。",
+    "clear_cache": "画像キャッシュをクリア",
+    "clear_cache_failed": "画像キャッシュのクリアに失敗しました。",
+    "clear_downloaded": "ダウンロードを削除",
+    "clear_downloads": "すべてのダウンロードを削除",
+    "clear_downloads_failed": "ダウンロードの削除に失敗しました。",
+    "clear_downloads_msg": "すべてのダウンロード済み動画を削除しますか?この操作は元に戻せません。",
+    "clear_downloads_title": "ダウンロードを削除",
+    "data_storage": "データとストレージ",
+    "general": "一般",
+    "github": "Github",
+    "hide_preview": "プレビューを隠す",
+    "hide_preview_desc": "最近使ったアプリの切り替え画面でアプリの内容を隠します。",
+    "immediately": "すぐに",
+    "language": "言語",
+    "links": "リンク",
+    "logout": "ログアウト",
+    "minute_1": "1 分",
+    "minutes_5": "5 分",
+    "more": "その他",
+    "orientation": "指向",
+    "orientation_desc": "すべてのリスト(ホーム / 検索 / タグ)を指向で絞り込みます。選択なし = すべて。",
+    "privacy": "プライバシーポリシー",
+    "privacy_security": "プライバシーとセキュリティ",
+    "rate": "評価",
+    "seconds_5": "5 秒",
+    "seconds_30": "30 秒",
+    "share": "共有",
+    "show_all": "すべて表示",
+    "support": "サポート",
+    "support_us": "サポートする",
+    "terms": "利用規約",
+    "theme": {
+      "dark": "ダーク",
+      "light": "ライト",
+      "system": "システム",
+      "title": "テーマ"
+    },
+    "title": "設定",
+    "version": "バージョン",
+    "website": "ウェブサイト",
+    "wifi_only": "Wi-Fi のみダウンロード"
+  },
+  "search": {
+    "title": "検索",
+    "placeholder": "動画を検索...",
+    "history": "最近の検索",
+    "clear_history": "履歴を消去",
+    "hot_tags": "人気のタグ",
+    "no_results": "結果が見つかりません",
+    "searching": "検索中..."
+  },
+  "library": {
+    "title": "ライブラリ"
+  },
+  "favorites": {
+    "title": "お気に入り",
+    "empty": "お気に入りはまだありません"
+  },
+  "history": {
+    "title": "履歴",
+    "empty": "視聴履歴はありません",
+    "clear_all": "すべて消去"
+  },
+  "following": {
+    "title": "フォロー",
+    "empty": "フォロー中のユーザーはいません",
+    "unfollow": "フォロー解除",
+    "follow": "フォロー"
+  },
+  "welcome": "obytes アプリへようこそ"
+}

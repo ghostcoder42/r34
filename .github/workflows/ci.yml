@@ -1,0 +1,56 @@
+# Unified CI — runs lint, type-check and tests in a single job (one checkout,
+# one install) instead of three separate workflows. Triggers on push/PR to
+# main/dev and manually. The dev->main merge PR is skipped (push to dev already
+# ran CI).
+
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  ci:
+    name: Lint + Type Check + Tests
+    runs-on: ubuntu-latest
+    # skip the dev->main PR run (push to dev already ran CI)
+    if: github.event_name != 'pull_request' || github.head_ref != 'dev' || github.base_ref != 'main'
+
+    steps:
+      - name: 📦 Checkout project repo
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Setup Node + Bun + install deps
+        uses: ./.github/actions/setup-node-bun-install
+
+      - name: 🧹 Lint (biome)
+        run: bun run lint
+
+      - name: 🔎 Type check (tsc)
+        run: bun run type-check
+
+      - name: 🧪 Tests (jest)
+        run: bun run test:ci
+
+      - name: Jest Coverage Comment
+        uses: MishaKav/jest-coverage-comment@main
+        if: (success() || failure()) && github.event_name == 'pull_request'
+        with:
+          coverage-summary-path: ./coverage/coverage-summary.json
+          summary-title: '💯 Test Coverage'
+          badge-title: Coverage
+          create-new-comment: false
+          junitxml-title: 😎 Tests Results
+          junitxml-path: ./coverage/jest-junit.xml
+          coverage-title: 👀 Tests Details
+          coverage-path: ./coverage/coverage.txt
+          report-only-changed-files: true

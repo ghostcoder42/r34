@@ -1,0 +1,28 @@
+# Composite action: Setup Node + Bun + Install Dependencies
+
+# 👀 Example usage:
+#       - name: 📦 Setup Node + Bun + install deps
+#         uses: ./.github/actions/setup-node-bun-install
+
+name: 'Setup Node + Bun + Install Dependencies'
+description: 'Setup Node + Bun + Install Dependencies'
+runs:
+  using: 'composite'
+  steps:
+    - uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 22
+
+    - name: Cache bun install
+      uses: actions/cache@v5
+      with:
+        path: ~/.bun/install/cache
+        key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+        restore-keys: ${{ runner.os }}-bun-
+
+    - name: 📦 Install Project Dependencies
+      run: bun install --frozen-lockfile
+      shell: bash

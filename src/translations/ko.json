@@ -1,0 +1,96 @@
+{
+  "common": {
+    "cancel": "취소",
+    "clear": "삭제",
+    "done": "완료",
+    "error": "오류"
+  },
+  "tabs": {
+    "home": "홈",
+    "search": "검색",
+    "following": "팔로잉",
+    "library": "보관함",
+    "settings": "설정"
+  },
+  "onboarding": {
+    "message": "obytes 앱에 오신 것을 환영합니다"
+  },
+  "settings": {
+    "about": "정보",
+    "app_lock": "앱 잠금",
+    "app_name": "앱 이름",
+    "auto_lock_after": "자동 잠금 시간",
+    "bottom_tabs": "하단 탭",
+    "bottom_tabs_desc": "홈과 설정은 항상 표시됩니다.",
+    "cache_cleared": "이미지 캐시를 삭제했습니다.",
+    "clear_cache": "이미지 캐시 삭제",
+    "clear_cache_failed": "이미지 캐시 삭제에 실패했습니다.",
+    "clear_downloaded": "다운로드 삭제",
+    "clear_downloads": "모든 다운로드 삭제",
+    "clear_downloads_failed": "다운로드 삭제에 실패했습니다.",
+    "clear_downloads_msg": "다운로드한 모든 동영상을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+    "clear_downloads_title": "다운로드 삭제",
+    "data_storage": "데이터 및 저장공간",
+    "general": "일반",
+    "github": "Github",
+    "hide_preview": "미리보기 숨기기",
+    "hide_preview_desc": "최근 앱 전환 화면에서 앱 내용을 숨깁니다.",
+    "immediately": "즉시",
+    "language": "언어",
+    "links": "링크",
+    "logout": "로그아웃",
+    "minute_1": "1분",
+    "minutes_5": "5분",
+    "more": "더보기",
+    "orientation": "취향",
+    "orientation_desc": "모든 목록(홈 / 검색 / 태그)을 취향으로 필터링합니다. 선택 안 함 = 전체.",
+    "privacy": "개인정보 처리방침",
+    "privacy_security": "개인정보 및 보안",
+    "rate": "평가",
+    "seconds_5": "5초",
+    "seconds_30": "30초",
+    "share": "공유",
+    "show_all": "모두 표시",
+    "support": "지원",
+    "support_us": "응원하기",
+    "terms": "이용약관",
+    "theme": {
+      "dark": "다크",
+      "light": "라이트",
+      "system": "시스템",
+      "title": "테마"
+    },
+    "title": "설정",
+    "version": "버전",
+    "website": "웹사이트",
+    "wifi_only": "Wi-Fi 전용 다운로드"
+  },
+  "search": {
+    "title": "검색",
+    "placeholder": "동영상 검색...",
+    "history": "최근 검색",
+    "clear_history": "기록 삭제",
+    "hot_tags": "인기 태그",
+    "no_results": "결과를 찾을 수 없습니다",
+    "searching": "검색 중..."
+  },
+  "library": {
+    "title": "보관함"
+  },
+  "favorites": {
+    "title": "즐겨찾기",
+    "empty": "즐겨찾기가 없습니다"
+  },
+  "history": {
+    "title": "시청 기록",
+    "empty": "시청 기록이 없습니다",
+    "clear_all": "전체 삭제"
+  },
+  "following": {
+    "title": "팔로잉",
+    "empty": "팔로우한 사용자가 없습니다",
+    "unfollow": "팔로우 취소",
+    "follow": "팔로우"
+  },
+  "welcome": "obytes 앱에 오신 것을 환영합니다"
+}
