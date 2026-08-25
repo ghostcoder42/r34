@@ -1,5 +1,5 @@
 import { useEvent } from 'expo';
-import { Link, Stack, useLocalSearchParams } from 'expo-router';
+import { Link, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
@@ -55,6 +55,22 @@ function VideoSection({ data }: VideoSectionProps): React.ReactElement {
   const { isPlaying } = useEvent(player, 'playingChange', {
     isPlaying: player.playing,
   });
+
+  // The screen stays mounted in the stack after navigating away (e.g. to a
+  // tag or another post), so the player keeps playing — and two posts pushed
+  // on top of each other would play simultaneously. Pause whenever this
+  // screen loses focus (also covers unmount).
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        try {
+          player.pause();
+        } catch {
+          // Player already released (screen unmounting) — nothing to do.
+        }
+      };
+    }, [player])
+  );
 
   return (
     <View className="bg-black">
