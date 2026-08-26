@@ -1,4 +1,5 @@
 import { FlashList } from '@shopify/flash-list';
+import { useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
 import { ActivityIndicator, ScrollView, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -29,8 +30,20 @@ const HOT_TAGS = [
 
 export default function SearchScreen() {
   const t = useTranslate();
-  const [query, setQuery] = React.useState('');
-  const [submittedQuery, setSubmittedQuery] = React.useState('');
+  // Deep links (site /search/{query}/ URLs, see src/app/search/[query].tsx)
+  // arrive with the query pre-filled via the `q` param.
+  const { q } = useLocalSearchParams<{ q?: string }>();
+  const initialQuery = q ?? '';
+  const [query, setQuery] = React.useState(initialQuery);
+  const [submittedQuery, setSubmittedQuery] = React.useState(initialQuery);
+
+  // Re-seed when a new deep link arrives while this tab is already mounted.
+  React.useEffect(() => {
+    if (q) {
+      setQuery(q);
+      setSubmittedQuery(q);
+    }
+  }, [q]);
 
   const { getHistory, addHistory, removeHistory, clearHistory } = useSearchHistory();
   const { favoriteTags } = useTagStore();
