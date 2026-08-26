@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import * as LocalAuthentication from 'expo-local-authentication';
 import type * as React from 'react';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, TouchableOpacity } from 'react-native';
+import { Alert, Platform, Pressable, TouchableOpacity } from 'react-native';
 
 import { AppIconItem } from '@/components/settings/app-icon-item';
 import { ItemsContainer } from '@/components/settings/items-container';
@@ -17,6 +17,10 @@ import { useDownloadedStore } from '@/lib/stores/downloaded-store';
 import { ORIENTATIONS, useOrientationStore } from '@/lib/stores/orientation-store';
 import { useTabConfigStore } from '@/lib/stores/tab-config-store';
 import { useColorScheme } from 'nativewind';
+
+import { openAppLinkSettings } from '@/lib/open-app-link-settings';
+
+const SITE_DOMAIN = 'rule34video.com';
 
 /**
  * A plain-text settings row. `label` is a pre-translated string passed in by
@@ -249,6 +253,30 @@ export default function Settings() {
                 tx="settings.orientation_desc"
               />
             </View>
+
+            {/* Open site links in-app (Android): domain needs manual approval */}
+            {Platform.OS === 'android' ? (
+              <View className="pt-2">
+                <Text
+                  className="text-neutral-900 dark:text-neutral-100 pb-1 text-lg"
+                  tx="settings.open_links"
+                />
+                <View className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-800">
+                  <Pressable
+                    android_ripple={{ color: '#00000020' }}
+                    onPress={() => void openAppLinkSettings()}
+                    className="flex-row items-center justify-between px-4 py-3"
+                  >
+                    <Text className="text-neutral-900 dark:text-neutral-100">{SITE_DOMAIN}</Text>
+                    <Text className="text-primary-500">{t('settings.manage_links')}</Text>
+                  </Pressable>
+                </View>
+                <Text
+                  className="text-neutral-500 dark:text-neutral-400 mt-1 px-1 text-xs"
+                  tx="settings.open_links_desc"
+                />
+              </View>
+            ) : null}
 
             {/* Data & Storage */}
             <ItemsContainer title="settings.data_storage">

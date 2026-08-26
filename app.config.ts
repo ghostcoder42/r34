@@ -45,6 +45,10 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     ios: {
       supportsTablet: true,
       bundleIdentifier: Env.BUNDLE_ID,
+      // Universal links for the site. Verification requires the domain to
+      // serve an AASA file (apple-app-site-association); until then the app
+      // is still listed as a candidate handler for tapped links.
+      associatedDomains: ['applinks:rule34video.com'],
       config: {
         usesNonExemptEncryption: false, // Avoid the export compliance warning on the app store
       },
@@ -61,6 +65,17 @@ export default ({ config }: ConfigContext): ExpoConfig =>
         backgroundColor: '#2E3C4B',
       },
       package: Env.PACKAGE,
+      // App links for the site so rule34video.com URLs (e.g. /video/{id}/{slug}/)
+      // open in the app instead of the browser (Android 12+ users must allow the
+      // domain by hand — see the "Open Site Links" entry in Settings).
+      intentFilters: [
+        {
+          action: 'VIEW',
+          autoVerify: true,
+          data: [{ scheme: 'https', host: 'rule34video.com' }],
+          category: ['BROWSABLE', 'DEFAULT'],
+        },
+      ],
     },
     web: {
       favicon: './assets/favicon.png',
