@@ -6,6 +6,7 @@ import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { useVideos } from '@/api/video-queries';
 import { FocusAwareStatusBar, SafeAreaView, Text } from '@/components/ui';
 import { VideoTile } from '@/components/video-tile';
+import { flattenUniquePages } from '@/lib/flatten-pages';
 import { useColumns } from '@/lib/hooks/use-columns';
 import type { VideoListItem } from '@/lib/r34/types';
 
@@ -18,8 +19,7 @@ export default function CategoryPage(): React.ReactElement {
   });
 
   const videos = React.useMemo(() => {
-    if (!data) return [];
-    return data.pages.flatMap((page) => page.data);
+    return flattenUniquePages(data?.pages, (item) => item.id);
   }, [data]);
 
   const renderItem = React.useCallback(
@@ -69,7 +69,6 @@ export default function CategoryPage(): React.ReactElement {
             </View>
           }
           onEndReachedThreshold={0.5}
-          estimatedItemSize={260}
         />
       )}
     </SafeAreaView>

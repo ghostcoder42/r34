@@ -6,6 +6,7 @@ import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { useMemberVideos } from '@/api/video-queries';
 import { FocusAwareStatusBar, SafeAreaView, Text } from '@/components/ui';
 import { VideoTile } from '@/components/video-tile';
+import { flattenUniquePages } from '@/lib/flatten-pages';
 import { useColumns } from '@/lib/hooks/use-columns';
 import type { VideoListItem } from '@/lib/r34/types';
 import { useFollowingStore } from '@/lib/stores/following-store';
@@ -20,8 +21,7 @@ export default function AuthorPage(): React.ReactElement {
     useMemberVideos({ variables: { memberId: id } });
 
   const videos = React.useMemo(() => {
-    if (!data) return [];
-    return data.pages.flatMap((page) => page.data);
+    return flattenUniquePages(data?.pages, (item) => item.id);
   }, [data]);
 
   const renderItem = React.useCallback(
@@ -94,7 +94,6 @@ export default function AuthorPage(): React.ReactElement {
             }
           }}
           onEndReachedThreshold={0.5}
-          estimatedItemSize={260}
         />
       )}
     </SafeAreaView>

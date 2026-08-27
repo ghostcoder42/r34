@@ -48,7 +48,6 @@ function HistoryTab(): React.ReactElement {
           setRefreshing(true);
           setTimeout(() => setRefreshing(false), 400);
         }}
-        estimatedItemSize={260}
       />
     </>
   );
@@ -253,7 +252,6 @@ function DownloadsTab(): React.ReactElement {
       }
       refreshing={refreshing}
       onRefresh={onRefresh}
-      estimatedItemSize={72}
     />
   );
 }
@@ -295,7 +293,6 @@ function FavoritesTab(): React.ReactElement {
         setRefreshing(true);
         setTimeout(() => setRefreshing(false), 400);
       }}
-      estimatedItemSize={260}
     />
   );
 }

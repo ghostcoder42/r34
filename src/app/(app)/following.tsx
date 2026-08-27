@@ -46,7 +46,6 @@ export default function FollowingScreen(): React.ReactElement {
             </Link>
           )}
           keyExtractor={(item) => item.slug}
-          estimatedItemSize={56}
         />
       )}
     </SafeAreaView>
