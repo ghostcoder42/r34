@@ -6,6 +6,7 @@ import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { useTagVideos } from '@/api/search';
 import { FocusAwareStatusBar, SafeAreaView, Text } from '@/components/ui';
 import { VideoTile } from '@/components/video-tile';
+import { flattenUniquePages } from '@/lib/flatten-pages';
 import { useColumns } from '@/lib/hooks/use-columns';
 import type { Post } from '@/lib/r34/extractor';
 import { useTagStore } from '@/lib/stores/tag-store';
@@ -20,8 +21,7 @@ export default function TagPage(): React.ReactElement {
     useTagVideos(id);
 
   const posts = React.useMemo(() => {
-    if (!data) return [];
-    return data.pages.flatMap((page) => page.data);
+    return flattenUniquePages(data?.pages, (item) => item.id);
   }, [data]);
 
   const renderItem = React.useCallback(({ item }: { item: Post }) => <VideoTile item={item} />, []);
@@ -89,7 +89,6 @@ export default function TagPage(): React.ReactElement {
             }
           }}
           onEndReachedThreshold={0.5}
-          estimatedItemSize={260}
         />
       )}
     </SafeAreaView>

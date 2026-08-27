@@ -102,7 +102,6 @@ export const Options = React.forwardRef<BottomSheetModal, OptionsProps>(
           keyExtractor={keyExtractor}
           renderItem={renderSelectItem}
           testID={testID ? `${testID}-modal` : undefined}
-          {...(Platform.OS === 'web' ? { estimatedItemSize: 52 } : {})}
         />
       </Modal>
     );

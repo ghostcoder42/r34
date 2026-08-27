@@ -7,6 +7,7 @@ import { useSearch } from '@/api/search';
 import { FocusAwareStatusBar, SafeAreaView, Text } from '@/components/ui';
 import { VideoTile } from '@/components/video-tile';
 import { useTranslate } from '@/lib';
+import { flattenUniquePages } from '@/lib/flatten-pages';
 import { useColumns } from '@/lib/hooks/use-columns';
 import { useSearchHistory } from '@/lib/hooks/use-search-history';
 import type { Post } from '@/lib/r34/extractor';
@@ -53,8 +54,7 @@ export default function SearchScreen() {
   const numColumns = useColumns();
 
   const posts = React.useMemo(() => {
-    if (!data) return [];
-    return data.pages.flatMap((page) => page.data);
+    return flattenUniquePages(data?.pages, (item) => item.id);
   }, [data]);
 
   const [history, setHistory] = React.useState<string[]>(getHistory());
@@ -129,7 +129,6 @@ export default function SearchScreen() {
               }
             }}
             onEndReachedThreshold={0.5}
-            estimatedItemSize={300}
           />
         )
       ) : (
