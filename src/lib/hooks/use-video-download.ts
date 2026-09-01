@@ -54,12 +54,15 @@ export const useVideoDownload = ({
     if (useActiveDownloadsStore.getState().tasks[baseId]) return; // already active
 
     // Surface immediately so the active-downloads list / tile badge light up now.
+    // The full source (url/quality/uploader) is captured by downloadVideo so a
+    // failure stays retryable.
     useActiveDownloadsStore.getState().start({
       baseId,
       title: videoTitle || `Video ${baseId}`,
       thumbnail: videoThumbnail || '',
       slug: videoSlug,
       uploader: videoUploader,
+      uploaderMemberId: videoUploaderMemberId,
     });
 
     try {

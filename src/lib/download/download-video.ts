@@ -1,8 +1,12 @@
 import * as FileSystem from 'expo-file-system/legacy';
 
+import { r34Client } from '@/api/common/r34';
 import { saveDownloadMetadata } from '@/lib/download';
 import type { DownloadMetadata } from '@/lib/download';
+import { getDownloadPath } from '@/lib/hooks/use-download-settings';
+import { buildVideoUrl } from '@/lib/r34/scraper';
 import { useActiveDownloadsStore } from '@/lib/stores/active-downloads-store';
+import type { ActiveDownload } from '@/lib/stores/active-downloads-store';
 import { baseIdOf, useDownloadedStore } from '@/lib/stores/downloaded-store';
 
 export type DownloadVideoOptions = {
@@ -80,6 +84,13 @@ export async function downloadVideo(opts: DownloadVideoOptions): Promise<Downloa
 
   try {
     useActiveDownloadsStore.getState().setStatus(baseId, 'downloading');
+    // Remember where this task downloads from so it can be retried after a
+    // failure (persisted with the task for retries across app restarts).
+    useActiveDownloadsStore.getState().setSource(baseId, {
+      videoUrl,
+      videoId,
+      quality: videoId.split('_').pop() || 'unknown',
+    });
     const result = await downloadResumable.downloadAsync();
     if (!result?.uri) {
       throw new Error('Download failed: no file produced');
@@ -163,4 +174,81 @@ export async function cancelDownload(baseId: string): Promise<void> {
     // ignore
   }
   useActiveDownloadsStore.getState().remove(baseId);
+}
+
+/** Removes a leftover partial file so the next attempt starts clean. */
+async function deletePartialFile(fileUri: string): Promise<void> {
+  try {
+    const info = await FileSystem.getInfoAsync(fileUri);
+    if (info.exists) {
+      await FileSystem.deleteAsync(fileUri);
+    }
+  } catch {
+    // ignore — a partial file only wastes space, it doesn't block the retry
+  }
+}
+
+/**
+ * Resolves what a failed task should download: the stored direct URL when we
+ * have one (it can outlive the video page), otherwise re-scrape the detail
+ * page via the stored slug. Returns the composite videoId to save under.
+ */
+async function resolveRetrySource(
+  task: Pick<ActiveDownload, 'baseId' | 'slug' | 'quality' | 'videoUrl' | 'videoId'>
+): Promise<{ videoUrl: string; videoId: string }> {
+  if (task.videoUrl && task.videoId) {
+    return { videoUrl: task.videoUrl, videoId: task.videoId };
+  }
+  if (!task.slug) {
+    throw new Error('No source info to retry this download');
+  }
+  const detail = await r34Client.getVideoDetail(buildVideoUrl(task.baseId, task.slug));
+  const format =
+    detail.formats.find((f) => f.quality === task.quality) ??
+    detail.formats.find((f) => f.quality === '720p') ??
+    detail.formats[0];
+  if (!format) {
+    throw new Error('No downloadable format');
+  }
+  return { videoUrl: format.url, videoId: `${task.baseId}_${format.quality}` };
+}
+
+/**
+ * Retries a failed download from the Downloads tab (or anywhere else that has
+ * the baseId). Only error tasks can be retried; the task keeps its row and
+ * runs through the normal progress → complete/fail lifecycle again. Errors are
+ * reported through the task state, not the returned promise.
+ */
+export async function retryDownload(baseId: string): Promise<void> {
+  const task = useActiveDownloadsStore.getState().tasks[baseId];
+  if (!task || task.status !== 'error') return;
+
+  // Reset synchronously so a second tap (or the failure path below) always
+  // sees a consistent task.
+  useActiveDownloadsStore.getState().restart(baseId);
+
+  const downloadPath = getDownloadPath();
+  try {
+    const source = await resolveRetrySource(task);
+    await deletePartialFile(`${FileSystem.documentDirectory}${downloadPath}/${source.videoId}.mp4`);
+    await downloadVideo({
+      videoUrl: source.videoUrl,
+      videoId: source.videoId,
+      title: task.title,
+      thumbnail: task.thumbnail,
+      downloadPath,
+      slug: task.slug,
+      uploader: task.uploader,
+      uploaderMemberId: task.uploaderMemberId,
+    });
+  } catch (error) {
+    // resolveRetrySource failures don't pass through downloadVideo's own
+    // error handling — mark the task failed so the UI keeps offering retry.
+    const current = useActiveDownloadsStore.getState().tasks[baseId];
+    if (current && current.status !== 'cancelled') {
+      useActiveDownloadsStore
+        .getState()
+        .fail(baseId, error instanceof Error ? error.message : 'Download failed');
+    }
+  }
 }

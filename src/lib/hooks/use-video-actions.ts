@@ -18,6 +18,9 @@ export type ActionableItem = {
   thumbnail: string;
   duration?: string;
   views?: string;
+  /** Present when the caller already knows the uploader (e.g. download rows). */
+  uploader?: string;
+  uploaderMemberId?: string;
 };
 
 /**
@@ -58,6 +61,8 @@ export function useVideoActions(item: ActionableItem) {
       title: item.title,
       thumbnail: item.thumbnail,
       slug: item.slug,
+      uploader: item.uploader,
+      uploaderMemberId: item.uploaderMemberId,
     });
     try {
       const detail = await r34Client.getVideoDetail(buildVideoUrl(item.id, item.slug));
