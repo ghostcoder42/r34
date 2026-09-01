@@ -20,14 +20,32 @@ type VideoSectionProps = {
 function VideoSection({ data }: VideoSectionProps): React.ReactElement {
   const [selectedQuality, setSelectedQuality] = React.useState<string>('');
   const [selectedFormat, setSelectedFormat] = React.useState<VideoFormat | null>(null);
+  // Set when the user taps a quality pill; after that the selection is theirs.
+  const manualPickRef = React.useRef(false);
+
+  // Any downloaded copy of this video (regardless of quality). When present it
+  // owns the player source — a download must stay playable offline, so neither
+  // a successful network refresh nor a failed/deleted video page may move the
+  // player back to a network URL.
+  const downloaded = useDownloadedStore(
+    (s) => s.entries.find((e) => baseIdOf(e.videoId) === data.id) ?? null
+  );
 
   React.useEffect(() => {
-    if (data.formats?.length && !selectedQuality) {
+    if (manualPickRef.current) return;
+    // The downloaded file wins even when the network detail offers other
+    // qualities (it defaults to 720p) or arrives after this page opened.
+    if (downloaded) {
+      setSelectedQuality(downloaded.quality);
+      setSelectedFormat({ url: downloaded.uri, quality: downloaded.quality, ext: 'mp4' });
+      return;
+    }
+    if (data.formats?.length) {
       const defaultFormat = data.formats.find((f) => f.quality === '720p') || data.formats[0];
       setSelectedQuality(defaultFormat.quality);
       setSelectedFormat(defaultFormat);
     }
-  }, [data.formats, selectedQuality]);
+  }, [downloaded, data.formats]);
 
   const {
     isDownloading,
@@ -113,6 +131,7 @@ function VideoSection({ data }: VideoSectionProps): React.ReactElement {
                     key={format.quality}
                     variant={selectedQuality === format.quality ? 'default' : 'secondary'}
                     onPress={() => {
+                      manualPickRef.current = true;
                       setSelectedQuality(format.quality);
                       setSelectedFormat(format);
                     }}
