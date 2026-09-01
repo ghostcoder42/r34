@@ -37,7 +37,8 @@ describe('toOfflineDetail', () => {
 
     expect(detail.tags).toEqual([]);
     expect(detail.categories).toEqual([]);
-    expect(detail.artist).toBeUndefined();
+    expect(detail.artists).toEqual([]);
+    expect(detail.uploader).toBeUndefined();
     expect(detail.description).toBeUndefined();
   });
 });

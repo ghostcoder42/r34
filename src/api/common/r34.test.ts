@@ -65,7 +65,10 @@ describe('r34Client', () => {
 
       expect(result.uploader).toBe('TestUser');
       expect(result.uploaderMemberId).toBe('99999');
-      expect(result.artist).toBe('Starfire');
+      expect(result.artists).toEqual([
+        { name: 'Starfire', slug: 'starfire' },
+        { name: 'OpenNSFW (VA)', slug: 'opennsfw' },
+      ]);
       expect(result.formats.length).toBeGreaterThan(0);
     });
   });
