@@ -8,6 +8,7 @@ import { FocusAwareStatusBar, SafeAreaView, Text } from '@/components/ui';
 import { VideoTile } from '@/components/video-tile';
 import { flattenUniquePages } from '@/lib/flatten-pages';
 import { useColumns } from '@/lib/hooks/use-columns';
+import { useFetchErrorToast } from '@/lib/hooks/use-fetch-error-toast';
 import type { Post } from '@/lib/r34/extractor';
 import { useTagStore } from '@/lib/stores/tag-store';
 
@@ -17,16 +18,27 @@ export default function TagPage(): React.ReactElement {
   const favorited = isFavorite(name ?? id);
   const numColumns = useColumns();
 
-  const { data, isPending, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useTagVideos(id);
+  const {
+    data,
+    isPending,
+    isError,
+    error,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useTagVideos(id);
 
   const posts = React.useMemo(() => {
     return flattenUniquePages(data?.pages, (item) => item.id);
   }, [data]);
 
+  // Keep loaded posts on fetch errors; toast says what went wrong.
+  useFetchErrorToast(isError, error, posts.length > 0);
+
   const renderItem = React.useCallback(({ item }: { item: Post }) => <VideoTile item={item} />, []);
 
-  if (isError) {
+  if (isError && posts.length === 0) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-white dark:bg-neutral-900">
         <Stack.Screen options={{ title: 'Error' }} />

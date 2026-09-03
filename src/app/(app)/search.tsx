@@ -9,6 +9,7 @@ import { VideoTile } from '@/components/video-tile';
 import { useTranslate } from '@/lib';
 import { flattenUniquePages } from '@/lib/flatten-pages';
 import { useColumns } from '@/lib/hooks/use-columns';
+import { useFetchErrorToast } from '@/lib/hooks/use-fetch-error-toast';
 import { useSearchHistory } from '@/lib/hooks/use-search-history';
 import type { Post } from '@/lib/r34/extractor';
 import { useTagStore } from '@/lib/stores/tag-store';
@@ -49,13 +50,17 @@ export default function SearchScreen() {
   const { getHistory, addHistory, removeHistory, clearHistory } = useSearchHistory();
   const { favoriteTags } = useTagStore();
 
-  const { data, isPending, fetchNextPage, hasNextPage, isFetchingNextPage } =
+  const { data, isPending, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSearch(submittedQuery);
   const numColumns = useColumns();
 
   const posts = React.useMemo(() => {
     return flattenUniquePages(data?.pages, (item) => item.id);
   }, [data]);
+
+  // Search errors used to fail silently — surface them via toast while
+  // keeping whatever results are already on screen.
+  useFetchErrorToast(isError, error, posts.length > 0);
 
   const [history, setHistory] = React.useState<string[]>(getHistory());
 
