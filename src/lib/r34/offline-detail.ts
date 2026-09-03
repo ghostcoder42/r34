@@ -5,7 +5,7 @@ import type { VideoDetail } from './types';
 /**
  * Build a minimal VideoDetail from a downloaded item so the post page can
  * render (and play the local file) with no network. Rich metadata
- * (tags/categories/artist) is unavailable offline by design.
+ * (tags/categories/artists) is unavailable offline by design.
  */
 export function toOfflineDetail(meta: DownloadMetadata, id: string): VideoDetail {
   return {
@@ -19,5 +19,6 @@ export function toOfflineDetail(meta: DownloadMetadata, id: string): VideoDetail
     formats: [{ url: meta.uri, quality: meta.quality, ext: 'mp4' }],
     tags: [],
     categories: [],
+    artists: [],
   };
 }

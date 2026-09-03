@@ -9,6 +9,7 @@ import { useVideoDetail } from '@/api/video-queries';
 import { ActivityIndicator, Button, FocusAwareStatusBar, Text } from '@/components/ui';
 import { useVideoDownload } from '@/lib/hooks';
 import { useTranslate } from '@/lib/i18n';
+import { artistChipLabel } from '@/lib/r34/artists';
 import { toOfflineDetail } from '@/lib/r34/offline-detail';
 import type { VideoDetail, VideoFormat } from '@/lib/r34/types';
 import { baseIdOf, useDownloadedStore } from '@/lib/stores/downloaded-store';
@@ -312,23 +313,27 @@ export default function Post(): React.ReactElement | null {
           </View>
 
           <View className="mb-6 flex-row flex-wrap items-center gap-4">
-            {data.artist ? (
+            {(data.artists ?? []).map((artist) => (
               <Link
+                key={artist.slug}
                 href={{
                   pathname: '/model/[slug]',
-                  params: { slug: data.artist.toLowerCase().replace(/\s+/g, '-') },
+                  // Navigate with the real site slug from the scraper —
+                  // deriving it from the display name 404s for names like
+                  // "OpenNSFW (VA)" (actual slug: "opennsfw").
+                  params: { slug: artist.slug },
                 }}
                 asChild
               >
                 <TouchableOpacity>
                   <View className="flex-row items-center rounded-full bg-primary-100 px-3 py-1.5 dark:bg-primary-900/30">
                     <Text className="text-sm font-semibold text-primary-900 dark:text-primary-100">
-                      Artist: {data.artist}
+                      {artistChipLabel(artist.name)}
                     </Text>
                   </View>
                 </TouchableOpacity>
               </Link>
-            ) : null}
+            ))}
 
             {data.uploader && data.uploaderMemberId ? (
               <Link

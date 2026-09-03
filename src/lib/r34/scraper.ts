@@ -159,19 +159,43 @@ export function parseVideoDetail(html: string, videoId: string, slug: string): V
     categories.push(match[1].trim());
   }
 
-  // Extract uploader (a site member). Capture the member id from the profile
-  // link and the name from the avatar's alt attribute.
+  // Extract the uploader (a site member). Anchor on the "Uploaded by" label,
+  // then bind the name to the member anchor's own inner HTML — the avatar's
+  // alt text first, plain text (tags stripped) as a fallback for members
+  // without an avatar. This can't bleed into unrelated elements further down
+  // the page the way a lazy document-wide scan could.
   const uploaderMatch = html.match(
-    /Uploaded by<\/div>\s*<a[^>]+href="(?<url>https:\/\/rule34video\.com\/members\/(?<id>\d+)\/)"[\s\S]*?alt="(?<name>[^"]*)"/i
+    /Uploaded by<\/div>\s*<a[^>]*href="https:\/\/rule34video\.com\/members\/(\d+)\/"[^>]*>([\s\S]*?)<\/a>/i
   );
-  const uploader = uploaderMatch?.groups?.name?.trim();
-  const uploaderMemberId = uploaderMatch?.groups?.id;
+  const uploaderMemberId = uploaderMatch?.[1];
+  const uploaderInner = uploaderMatch?.[2] ?? '';
+  const uploader =
+    uploaderInner.match(/alt="([^"]*)"/)?.[1]?.trim() ||
+    uploaderInner
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim() ||
+    undefined;
 
-  // Extract artist
-  const artistMatch = html.match(
-    /<a[^>]+class="item btn_link"[^>]+href="(?<url>[^"]+)"[^>]*>\s*<span class="name">\s*(?<name>[^<]+)\s*<\/span>\s*<\/a>/i
-  );
-  const artist = artistMatch?.groups?.name?.trim();
+  // Extract artists (site "models"). Each artist is a pill anchor (class
+  // contains "item btn_link") linking to /models/{slug}/ — the sidebar's "Top
+  // Artists" links (class="item", no btn_link) must not match. The slug comes
+  // from the href itself: deriving it from the display name breaks for names
+  // like "OpenNSFW (VA)", whose real site slug is "opennsfw".
+  // NOTE: positional capture groups (match[1..n]) — Hermes' matchAll does not
+  // populate `.groups` for named captures the way V8 does.
+  const artists: { name: string; slug: string }[] = [];
+  const artistRegex =
+    /<a[^>]*class="[^"]*\bitem btn_link\b[^"]*"[^>]*href="https:\/\/rule34video\.com\/models\/([^\/"]+)\/"[^>]*>([\s\S]*?)<\/a>/g;
+  for (const match of html.matchAll(artistRegex)) {
+    const slug = match[1];
+    if (artists.some((a) => a.slug === slug)) continue;
+    const name =
+      match[2].match(/<span class="name">\s*([^<]+?)\s*<\/span>/)?.[1]?.trim() ||
+      match[2].match(/alt="([^"]*)"/)?.[1]?.trim() ||
+      slug;
+    artists.push({ name, slug });
+  }
 
   // Extract description
   const descriptionMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
@@ -197,7 +221,7 @@ export function parseVideoDetail(html: string, videoId: string, slug: string): V
     formats,
     tags,
     categories,
-    artist,
+    artists,
     uploader,
     uploaderMemberId,
     description,

@@ -20,11 +20,18 @@ export type VideoTag = {
   name: string;
 };
 
+/** A site "model" (artist) with its real URL slug — names don't map to slugs. */
+export type VideoArtist = {
+  name: string;
+  slug: string;
+};
+
 export type VideoDetail = VideoListItem & {
   formats: VideoFormat[];
   tags: VideoTag[];
   categories: string[];
-  artist?: string;
+  /** Artists (site models) — a video can have several. */
+  artists: VideoArtist[];
   uploader?: string;
   uploaderMemberId?: string;
   description?: string;
