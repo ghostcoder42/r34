@@ -95,5 +95,9 @@
     "unfollow": "取消关注",
     "follow": "关注"
   },
+  "post": {
+    "video_removed": "当前视频已被网站删除",
+    "site_unreachable": "无法访问网站，请检查网络"
+  },
   "welcome": "欢迎使用 obytes 应用"
 }

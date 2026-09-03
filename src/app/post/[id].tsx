@@ -3,10 +3,12 @@ import { Link, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { showMessage } from 'react-native-flash-message';
 
 import { useVideoDetail } from '@/api/video-queries';
 import { ActivityIndicator, Button, FocusAwareStatusBar, Text } from '@/components/ui';
 import { useVideoDownload } from '@/lib/hooks';
+import { useTranslate } from '@/lib/i18n';
 import { toOfflineDetail } from '@/lib/r34/offline-detail';
 import type { VideoDetail, VideoFormat } from '@/lib/r34/types';
 import { baseIdOf, useDownloadedStore } from '@/lib/stores/downloaded-store';
@@ -20,14 +22,32 @@ type VideoSectionProps = {
 function VideoSection({ data }: VideoSectionProps): React.ReactElement {
   const [selectedQuality, setSelectedQuality] = React.useState<string>('');
   const [selectedFormat, setSelectedFormat] = React.useState<VideoFormat | null>(null);
+  // Set when the user taps a quality pill; after that the selection is theirs.
+  const manualPickRef = React.useRef(false);
+
+  // Any downloaded copy of this video (regardless of quality). When present it
+  // owns the player source — a download must stay playable offline, so neither
+  // a successful network refresh nor a failed/deleted video page may move the
+  // player back to a network URL.
+  const downloaded = useDownloadedStore(
+    (s) => s.entries.find((e) => baseIdOf(e.videoId) === data.id) ?? null
+  );
 
   React.useEffect(() => {
-    if (data.formats?.length && !selectedQuality) {
+    if (manualPickRef.current) return;
+    // The downloaded file wins even when the network detail offers other
+    // qualities (it defaults to 720p) or arrives after this page opened.
+    if (downloaded) {
+      setSelectedQuality(downloaded.quality);
+      setSelectedFormat({ url: downloaded.uri, quality: downloaded.quality, ext: 'mp4' });
+      return;
+    }
+    if (data.formats?.length) {
       const defaultFormat = data.formats.find((f) => f.quality === '720p') || data.formats[0];
       setSelectedQuality(defaultFormat.quality);
       setSelectedFormat(defaultFormat);
     }
-  }, [data.formats, selectedQuality]);
+  }, [downloaded, data.formats]);
 
   const {
     isDownloading,
@@ -113,6 +133,7 @@ function VideoSection({ data }: VideoSectionProps): React.ReactElement {
                     key={format.quality}
                     variant={selectedQuality === format.quality ? 'default' : 'secondary'}
                     onPress={() => {
+                      manualPickRef.current = true;
                       setSelectedQuality(format.quality);
                       setSelectedFormat(format);
                     }}
@@ -181,12 +202,18 @@ function FavoriteButton({ data }: { data: VideoDetail }): React.ReactElement {
 
 export default function Post(): React.ReactElement | null {
   const local = useLocalSearchParams<{ id: string; slug: string }>();
+  const t = useTranslate();
   // Old download records didn't store slug; resolve it from history/favorites
   // so the online detail fetch can succeed and refresh the page.
   const historySlug = useHistoryStore((s) => s.history.find((h) => h.id === local.id)?.slug ?? '');
   const favSlug = useFavoritesStore((s) => s.favorites.find((f) => f.id === local.id)?.slug ?? '');
   const slug = local.slug || historySlug || favSlug || '';
-  const { data: networkData, isPending } = useVideoDetail({
+  const {
+    data: networkData,
+    isPending,
+    isError,
+    error,
+  } = useVideoDetail({
     variables: { id: local.id, slug },
   });
   // Offline fallback: a downloaded copy lets the page render and play the
@@ -196,6 +223,32 @@ export default function Post(): React.ReactElement | null {
   );
   const data = networkData ?? (downloaded ? toOfflineDetail(downloaded, local.id) : undefined);
   const addHistory = useHistoryStore((s) => s.addHistory);
+
+  // Why the page info couldn't be refreshed, so the toast can tell the two
+  // apart. A removed video shows up two ways: an HTTP 404/410, or a 200
+  // "shell" page (title only, no formats) that parses successfully. Anything
+  // else — offline, timeout, 5xx — means we simply couldn't reach the site;
+  // the video itself may be fine. Playback is unaffected either way: a
+  // download (if any) still plays from disk.
+  const failureKind = React.useMemo<'removed' | 'unreachable' | null>(() => {
+    if (networkData && networkData.formats.length === 0) return 'removed';
+    if (isError) {
+      const status = (error as (Error & { status?: number }) | null)?.status;
+      return status === 404 || status === 410 ? 'removed' : 'unreachable';
+    }
+    return null;
+  }, [networkData, isError, error]);
+
+  React.useEffect(() => {
+    if (!failureKind) return;
+    showMessage({
+      message: t(failureKind === 'removed' ? 'post.video_removed' : 'post.site_unreachable'),
+      type: 'warning',
+      // Centered: top toasts sit under the status bar / cutout on some devices.
+      position: 'center',
+      duration: 2500,
+    });
+  }, [failureKind, t]);
 
   // Record this video in watch history once its metadata is available.
   React.useEffect(() => {

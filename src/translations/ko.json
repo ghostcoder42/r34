@@ -95,5 +95,9 @@
     "unfollow": "팔로우 취소",
     "follow": "팔로우"
   },
+  "post": {
+    "video_removed": "이 영상은 사이트에서 삭제되었습니다",
+    "site_unreachable": "사이트에 연결할 수 없습니다. 네트워크를 확인하세요"
+  },
   "welcome": "obytes 앱에 오신 것을 환영합니다"
 }

@@ -95,5 +95,9 @@
     "unfollow": "取消追蹤",
     "follow": "追蹤"
   },
+  "post": {
+    "video_removed": "目前影片已被網站刪除",
+    "site_unreachable": "無法存取網站，請檢查網路"
+  },
   "welcome": "歡迎使用 obytes 應用"
 }

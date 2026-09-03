@@ -95,5 +95,9 @@
     "unfollow": "Deixar de seguir",
     "follow": "Seguir"
   },
+  "post": {
+    "video_removed": "Este vídeo foi removido do site",
+    "site_unreachable": "Não foi possível acessar o site; verifique sua conexão"
+  },
   "welcome": "Bem-vindo ao aplicativo obytes"
 }

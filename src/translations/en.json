@@ -95,5 +95,9 @@
     "unfollow": "Unfollow",
     "follow": "Follow"
   },
+  "post": {
+    "video_removed": "This video has been removed from the site",
+    "site_unreachable": "Couldn't reach the site — check your connection"
+  },
   "welcome": "Welcome to obytes app site"
 }

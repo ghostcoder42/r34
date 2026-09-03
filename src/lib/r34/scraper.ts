@@ -19,7 +19,13 @@ export async function fetchPage(url: string): Promise<string> {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch ${url}: ${response.status}`);
+      // Attach the status so callers can tell "page gone" (404/410) apart
+      // from reachability problems (offline, timeout, 5xx, …).
+      const error = new Error(`Failed to fetch ${url}: ${response.status}`) as Error & {
+        status?: number;
+      };
+      error.status = response.status;
+      throw error;
     }
 
     return await response.text();
