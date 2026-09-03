@@ -1,5 +1,3 @@
-import '@shopify/flash-list/jestSetup';
-
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import type { RenderOptions } from '@testing-library/react-native';
 import { render, userEvent } from '@testing-library/react-native';

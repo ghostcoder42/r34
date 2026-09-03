@@ -99,5 +99,13 @@
     "video_removed": "Este vídeo foi removido do site",
     "site_unreachable": "Não foi possível acessar o site; verifique sua conexão"
   },
+  "net": {
+    "offline": "Você parece estar offline; verifique sua conexão",
+    "timeout": "A rede expirou; tente novamente em instantes",
+    "rate_limited": "Muitas solicitações; tente novamente em breve",
+    "server": "O site está com problemas ({{status}}); tente mais tarde",
+    "not_found": "Este conteúdo não existe mais",
+    "http_error": "Falha na solicitação ({{status}}); tente mais tarde"
+  },
   "welcome": "Bem-vindo ao aplicativo obytes"
 }

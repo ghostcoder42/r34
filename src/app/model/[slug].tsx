@@ -8,6 +8,7 @@ import { FocusAwareStatusBar, SafeAreaView, Text } from '@/components/ui';
 import { VideoTile } from '@/components/video-tile';
 import { flattenUniquePages } from '@/lib/flatten-pages';
 import { useColumns } from '@/lib/hooks/use-columns';
+import { useFetchErrorToast } from '@/lib/hooks/use-fetch-error-toast';
 import type { VideoListItem } from '@/lib/r34/types';
 
 export default function ModelPage(): React.ReactElement {
@@ -18,6 +19,7 @@ export default function ModelPage(): React.ReactElement {
     data,
     isPending,
     isError,
+    error,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -30,6 +32,9 @@ export default function ModelPage(): React.ReactElement {
   const videos = React.useMemo(() => {
     return flattenUniquePages(data?.pages, (item) => item.id);
   }, [data]);
+
+  // Keep loaded videos on fetch errors; toast says what went wrong.
+  useFetchErrorToast(isError, error, videos.length > 0);
 
   const renderItem = React.useCallback(
     ({ item }: { item: VideoListItem }) => <VideoTile item={item} />,
@@ -50,7 +55,7 @@ export default function ModelPage(): React.ReactElement {
     [slug, videos.length]
   );
 
-  if (isError) {
+  if (isError && videos.length === 0) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-white dark:bg-neutral-900">
         <Stack.Screen options={{ title: 'Error' }} />

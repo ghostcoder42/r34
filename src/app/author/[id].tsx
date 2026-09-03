@@ -8,6 +8,7 @@ import { FocusAwareStatusBar, SafeAreaView, Text } from '@/components/ui';
 import { VideoTile } from '@/components/video-tile';
 import { flattenUniquePages } from '@/lib/flatten-pages';
 import { useColumns } from '@/lib/hooks/use-columns';
+import { useFetchErrorToast } from '@/lib/hooks/use-fetch-error-toast';
 import type { VideoListItem } from '@/lib/r34/types';
 import { useFollowingStore } from '@/lib/stores/following-store';
 
@@ -17,19 +18,30 @@ export default function AuthorPage(): React.ReactElement {
   const followed = isFollowing(id);
   const numColumns = useColumns();
 
-  const { data, isPending, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useMemberVideos({ variables: { memberId: id } });
+  const {
+    data,
+    isPending,
+    isError,
+    error,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useMemberVideos({ variables: { memberId: id } });
 
   const videos = React.useMemo(() => {
     return flattenUniquePages(data?.pages, (item) => item.id);
   }, [data]);
+
+  // Keep loaded videos on fetch errors; toast says what went wrong.
+  useFetchErrorToast(isError, error, videos.length > 0);
 
   const renderItem = React.useCallback(
     ({ item }: { item: VideoListItem }) => <VideoTile item={item} />,
     []
   );
 
-  if (isError) {
+  if (isError && videos.length === 0) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-white dark:bg-neutral-900">
         <Stack.Screen options={{ title: 'Error' }} />

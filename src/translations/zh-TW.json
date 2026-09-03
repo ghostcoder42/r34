@@ -99,5 +99,13 @@
     "video_removed": "目前影片已被網站刪除",
     "site_unreachable": "無法存取網站，請檢查網路"
   },
+  "net": {
+    "offline": "網路連線不可用，請檢查網路",
+    "timeout": "網路逾時，請稍後重試",
+    "rate_limited": "請求過於頻繁，請稍後再試",
+    "server": "網站服務暫時無法使用（{{status}}），請稍後重試",
+    "not_found": "內容不存在或已被移除",
+    "http_error": "請求失敗（{{status}}），請稍後重試"
+  },
   "welcome": "歡迎使用 obytes 應用"
 }
