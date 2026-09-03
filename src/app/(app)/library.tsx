@@ -9,7 +9,7 @@ import { FocusAwareStatusBar, SafeAreaView } from '@/components/ui';
 import { Trash } from '@/components/ui/icons';
 import { VideoTile } from '@/components/video-tile';
 import type { DownloadMetadata } from '@/lib/download';
-import { cancelDownload } from '@/lib/download/download-video';
+import { cancelDownload, retryDownload } from '@/lib/download/download-video';
 import { useColumns } from '@/lib/hooks/use-columns';
 import { type ActiveDownload, useActiveDownloadsStore } from '@/lib/stores/active-downloads-store';
 import { baseIdOf, useDownloadedStore } from '@/lib/stores/downloaded-store';
@@ -135,13 +135,24 @@ function DownloadRow({
 
 function ActiveDownloadRow({ task }: { task: ActiveDownload }): React.ReactElement {
   const [cancelling, setCancelling] = React.useState(false);
+  const [retrying, setRetrying] = React.useState(false);
   const indeterminate = task.progress < 0;
   const pct = indeterminate ? 0 : Math.round(task.progress * 100);
   const barWidth = indeterminate ? 40 : pct;
+  const isFailed = task.status === 'error';
+  // A retry is only meaningful while the task is still in its error state —
+  // once retryDownload flips it to preparing/downloading the button goes away.
+  const canRetry = isFailed && !retrying && Boolean(task.videoUrl || task.slug);
 
   const onCancel = async () => {
     setCancelling(true);
     await cancelDownload(task.baseId);
+  };
+
+  const onRetry = async () => {
+    setRetrying(true);
+    await retryDownload(task.baseId);
+    setRetrying(false);
   };
 
   return (
@@ -162,7 +173,7 @@ function ActiveDownloadRow({ task }: { task: ActiveDownload }): React.ReactEleme
         </Text>
         <Text className="text-neutral-500 dark:text-neutral-400 text-xs">
           {task.status === 'error'
-            ? `Failed${task.error ? `: ${task.error}` : ''}`
+            ? `Failed${task.error ? `: ${task.error}` : ''} — tap Retry to try again`
             : task.status === 'cancelled'
               ? 'Cancelled'
               : indeterminate
@@ -171,21 +182,43 @@ function ActiveDownloadRow({ task }: { task: ActiveDownload }): React.ReactEleme
         </Text>
         <View className="mt-1 h-1.5 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
           <View
-            className={task.status === 'error' ? 'h-full bg-red-500' : 'h-full bg-sky-500'}
+            className={isFailed ? 'h-full bg-red-500' : 'h-full bg-sky-500'}
             style={{ width: `${barWidth}%` }}
           />
         </View>
       </View>
-      <TouchableOpacity
-        onPress={onCancel}
-        disabled={cancelling || task.status === 'cancelled'}
-        className="ml-2 items-center justify-center rounded-full bg-neutral-200 px-3 py-1.5 dark:bg-neutral-700"
-        testID="active-download-cancel"
-      >
-        <Text className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
-          {cancelling ? '…' : 'Cancel'}
-        </Text>
-      </TouchableOpacity>
+      {canRetry ? (
+        <View className="ml-2 flex-row items-center gap-2">
+          <TouchableOpacity
+            onPress={onRetry}
+            className="items-center justify-center rounded-full bg-primary-500 px-3 py-1.5"
+            testID="active-download-retry"
+          >
+            <Text className="text-xs font-medium text-white">{retrying ? '…' : 'Retry'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={onCancel}
+            disabled={cancelling}
+            className="items-center justify-center rounded-full bg-neutral-200 px-3 py-1.5 dark:bg-neutral-700"
+            testID="active-download-cancel"
+          >
+            <Text className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
+              {cancelling ? '…' : 'Cancel'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity
+          onPress={onCancel}
+          disabled={cancelling || task.status === 'cancelled'}
+          className="ml-2 items-center justify-center rounded-full bg-neutral-200 px-3 py-1.5 dark:bg-neutral-700"
+          testID="active-download-cancel"
+        >
+          <Text className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
+            {cancelling ? '…' : 'Cancel'}
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

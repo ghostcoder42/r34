@@ -16,3 +16,8 @@ export const useDownloadSettings = () => {
     setWifiOnly: (v: boolean) => setWifiOnly(v ? 'true' : 'false'),
   };
 };
+
+/** The configured download folder, readable outside React (e.g. retry flows). */
+export function getDownloadPath(): string {
+  return storage.getString(DOWNLOAD_PATH_KEY) ?? 'videos';
+}

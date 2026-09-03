@@ -41,8 +41,33 @@ jest.mock('@/lib/download', () => ({
   saveDownloadMetadata: jest.fn().mockResolvedValue(undefined),
 }));
 
-import { cancelDownload, downloadVideo } from '@/lib/download/download-video';
-import { useActiveDownloadsStore } from '@/lib/stores/active-downloads-store';
+// In-memory MMKV stand-in (active-downloads-store persists failures through it,
+// and getDownloadPath reads the raw MMKV storage).
+jest.mock('@/lib/storage', () => {
+  const store: Record<string, string> = {};
+  return {
+    __esModule: true,
+    storage: {
+      getString: (key: string) => (key in store ? store[key] : undefined),
+      set: (key: string, value: string) => {
+        store[key] = value;
+      },
+    },
+    getItem: <T>(key: string): T | null => (key in store ? JSON.parse(store[key]) : null),
+    setItem: (key: string, value: unknown) => {
+      store[key] = JSON.stringify(value);
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+  };
+});
+
+import { cancelDownload, downloadVideo, retryDownload } from '@/lib/download/download-video';
+import {
+  restoreUnfinishedDownloads,
+  useActiveDownloadsStore,
+} from '@/lib/stores/active-downloads-store';
 import { useDownloadedStore } from '@/lib/stores/downloaded-store';
 
 const opts = {
@@ -106,4 +131,82 @@ describe('cancelDownload', () => {
     await expect(pending).rejects.toThrow('cancelled');
     expect(useDownloadedStore.getState().entries).toHaveLength(0);
   }, 15000);
+});
+
+describe('retryDownload', () => {
+  const failedTaskWithSource = () => {
+    useActiveDownloadsStore.getState().start({ baseId: '1', title: 'My Video', thumbnail: '' });
+    useActiveDownloadsStore.getState().setSource('1', {
+      videoUrl: 'https://example.com/v.mp4',
+      videoId: '1_720p',
+      quality: '720p',
+    });
+    useActiveDownloadsStore.getState().fail('1', 'network down');
+  };
+
+  it('retries a failed task from its stored source and completes', async () => {
+    failedTaskWithSource();
+
+    await retryDownload('1');
+
+    // Completed: task removed and metadata registered again.
+    expect(useActiveDownloadsStore.getState().tasks['1']).toBeUndefined();
+    expect(useDownloadedStore.getState().entries.some((e) => e.videoId === '1_720p')).toBe(true);
+  });
+
+  it('deletes the leftover partial file before restarting', async () => {
+    failedTaskWithSource();
+    const { getInfoAsync, deleteAsync } = jest.requireMock('expo-file-system/legacy');
+
+    await retryDownload('1');
+
+    expect(deleteAsync).toHaveBeenCalledWith('file:///doc/videos/1_720p.mp4');
+    expect(getInfoAsync).toHaveBeenCalledWith('file:///doc/videos/1_720p.mp4');
+  });
+
+  it('is a no-op unless the task is in the error state', async () => {
+    useActiveDownloadsStore.getState().start({ baseId: '1', title: 'My Video', thumbnail: '' });
+
+    await retryDownload('1');
+
+    const task = useActiveDownloadsStore.getState().tasks['1'];
+    expect(task?.status).toBe('preparing'); // untouched, not restarted
+  });
+
+  it('marks the task failed again when no source can be resolved', async () => {
+    // Failure happened before the source was captured and there is no slug to
+    // re-scrape — retry can't proceed, so the task stays retry-able/dismissable.
+    useActiveDownloadsStore.getState().start({ baseId: '1', title: 'My Video', thumbnail: '' });
+    useActiveDownloadsStore.getState().fail('1', 'network down');
+
+    await retryDownload('1');
+
+    const task = useActiveDownloadsStore.getState().tasks['1'];
+    expect(task?.status).toBe('error');
+    expect(task?.error).toBe('No source info to retry this download');
+  });
+});
+
+describe('interrupted downloads (app killed mid-transfer)', () => {
+  it('restores an interrupted task and retries it to completion', async () => {
+    // A download was in flight when the app died.
+    useActiveDownloadsStore.getState().start({ baseId: '1', title: 'My Video', thumbnail: '' });
+    useActiveDownloadsStore.getState().setSource('1', {
+      videoUrl: 'https://example.com/v.mp4',
+      videoId: '1_720p',
+      quality: '720p',
+    });
+    useActiveDownloadsStore.getState().setProgress('1', 0.4, 40, 100);
+    useActiveDownloadsStore.setState({ tasks: {} }); // app restart
+
+    restoreUnfinishedDownloads();
+    const task = useActiveDownloadsStore.getState().tasks['1'];
+    expect(task?.status).toBe('error');
+    expect(task?.error).toBe('Interrupted');
+
+    await retryDownload('1');
+
+    expect(useActiveDownloadsStore.getState().tasks['1']).toBeUndefined();
+    expect(useDownloadedStore.getState().entries.some((e) => e.videoId === '1_720p')).toBe(true);
+  });
 });
