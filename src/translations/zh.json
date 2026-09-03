@@ -99,5 +99,13 @@
     "video_removed": "当前视频已被网站删除",
     "site_unreachable": "无法访问网站，请检查网络"
   },
+  "net": {
+    "offline": "网络连接不可用，请检查网络",
+    "timeout": "网络超时，请稍后重试",
+    "rate_limited": "请求过于频繁，请稍后再试",
+    "server": "网站服务暂时不可用（{{status}}），请稍后重试",
+    "not_found": "内容不存在或已被移除",
+    "http_error": "请求失败（{{status}}），请稍后重试"
+  },
   "welcome": "欢迎使用 obytes 应用"
 }
