@@ -55,10 +55,21 @@ jest.mock('expo', () => ({
 // Per-test network detail returned by useVideoDetail.
 const mockDetailState = {
   data: null as object | null,
+  isError: false,
+  error: null as (Error & { status?: number }) | null,
 };
 
 jest.mock('@/api/video-queries', () => ({
-  useVideoDetail: () => ({ data: mockDetailState.data, isPending: false }),
+  useVideoDetail: () => ({
+    data: mockDetailState.data,
+    isPending: false,
+    isError: mockDetailState.isError,
+    error: mockDetailState.error,
+  }),
+}));
+
+jest.mock('react-native-flash-message', () => ({
+  showMessage: jest.fn(),
 }));
 
 jest.mock('@/lib/hooks', () => ({
@@ -72,11 +83,13 @@ jest.mock('@/lib/hooks', () => ({
   }),
 }));
 
+import { resources } from '@/lib/i18n/resources';
 import { useDownloadedStore } from '@/lib/stores/downloaded-store';
 import { useFavoritesStore } from '@/lib/stores/favorites-store';
 import { useHistoryStore } from '@/lib/stores/history-store';
 import { act, cleanup, screen, setup, waitFor } from '@/lib/test-utils';
 import { useVideoPlayer } from 'expo-video';
+import { showMessage } from 'react-native-flash-message';
 
 import Post from './[id]';
 
@@ -111,6 +124,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockPlayer.playing = false;
   mockDownloadState.existingFiles = new Set<string>();
+  mockDetailState.isError = false;
+  mockDetailState.error = null;
   useHistoryStore.setState({ history: [] });
   useFavoritesStore.setState({ favorites: [] });
   useDownloadedStore.setState({ entries: [], downloadedBaseIds: new Set(), loaded: true });
@@ -204,5 +219,73 @@ describe('Post screen — player source selection', () => {
     await user.press(screen.getByText('720p'));
 
     await waitFor(() => expect(lastPlayerSource()).toBe('https://example.com/v1_720p.mp4'));
+  });
+});
+
+describe('Post screen — dead page toast', () => {
+  // The toast text depends on the active i18n locale (en in tests).
+  const EN_REMOVED = resources.en.translation.post.video_removed;
+  const EN_UNREACHABLE = resources.en.translation.post.site_unreachable;
+
+  const lastToastMessage = () => (showMessage as jest.Mock).mock.calls[0]?.[0]?.message;
+
+  it('toasts "removed" for an HTTP 404 detail fetch', async () => {
+    mockDownloadState.existingFiles.add('v1_480p');
+    seedDownload('480p');
+    mockDetailState.isError = true;
+    mockDetailState.data = null;
+    const notFound = new Error(
+      'Failed to fetch https://rule34video.com/video/v1/x/: 404'
+    ) as Error & {
+      status?: number;
+    };
+    notFound.status = 404;
+    mockDetailState.error = notFound;
+
+    setup(<Post />);
+
+    await waitFor(() => expect(showMessage).toHaveBeenCalledTimes(1));
+    expect(lastToastMessage()).toBe(EN_REMOVED);
+    const call = (showMessage as jest.Mock).mock.calls[0][0];
+    expect(call.position).toBe('center'); // centered so it clears the status bar / cutout
+  });
+
+  it('toasts "unreachable" for a network error (offline / timeout / 5xx)', async () => {
+    mockDownloadState.existingFiles.add('v1_480p');
+    seedDownload('480p');
+    mockDetailState.isError = true;
+    mockDetailState.data = null;
+    mockDetailState.error = new Error('Network request failed'); // no status attached
+
+    setup(<Post />);
+
+    await waitFor(() => expect(showMessage).toHaveBeenCalledTimes(1));
+    expect(lastToastMessage()).toBe(EN_UNREACHABLE);
+  });
+
+  it('toasts "removed" when the site serves a shell page (no formats)', async () => {
+    mockDownloadState.existingFiles.add('v1_480p');
+    seedDownload('480p');
+    mockDetailState.data = {
+      id: 'v1',
+      slug: 'my-video',
+      title: 'Test Video',
+      thumbnail: '',
+      formats: [], // shell page parses "successfully" but carries no video info
+      tags: [],
+      categories: [],
+    };
+
+    setup(<Post />);
+
+    await waitFor(() => expect(showMessage).toHaveBeenCalledTimes(1));
+    expect(lastToastMessage()).toBe(EN_REMOVED);
+  });
+
+  it('does not toast for a healthy page', async () => {
+    setup(<Post />);
+
+    await waitFor(() => expect(lastPlayerSource()).toBe('https://example.com/v1_720p.mp4'));
+    expect(showMessage).not.toHaveBeenCalled();
   });
 });

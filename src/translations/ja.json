@@ -95,5 +95,9 @@
     "unfollow": "フォロー解除",
     "follow": "フォロー"
   },
+  "post": {
+    "video_removed": "この動画はサイトから削除されました",
+    "site_unreachable": "サイトに接続できません。ネットワークを確認してください"
+  },
   "welcome": "obytes アプリへようこそ"
 }
