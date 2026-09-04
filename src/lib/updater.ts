@@ -3,7 +3,7 @@ import { getItem, setItem } from '@/lib/storage';
 const GITHUB_LATEST_RELEASE_URL = 'https://api.github.com/repos/ghostcoder42/r34/releases/latest';
 const REQUEST_TIMEOUT_MS = 10000;
 const LAST_CHECK_KEY = 'update.last_check_at';
-const MAX_NOTES_LENGTH = 1000;
+const MAX_NOTES_LENGTH = 2000;
 
 export type ReleaseInfo = {
   /** Plain version, e.g. "0.4.0" (leading "v" from the git tag stripped). */
@@ -78,13 +78,27 @@ export function isNewerVersion(latest: string, current: string): boolean {
   return false;
 }
 
-/** Markdown links → their text, collapsed whitespace, capped for a dialog. */
+/**
+ * Flatten release-note markdown to plain text (dialogs show no formatting).
+ * GitHub bodies use CRLF — normalize first, or the stray \r glues lines
+ * together on Android. Heading regex uses [ \t]* (not \s*) so it doesn't eat
+ * the line break and glue the heading to the body.
+ */
 function cleanNotes(body: string): string {
   const cleaned = body
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/\r\n?/g, '\n')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/^#{1,6}[ \t]*/gm, '')
+    .replace(/(\*\*|__|`+)/g, '')
+    .replace(/^[ \t]*[-*+][ \t]+/gm, '• ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
-  return cleaned.length > MAX_NOTES_LENGTH ? `${cleaned.slice(0, MAX_NOTES_LENGTH)}…` : cleaned;
+  return truncateText(cleaned, MAX_NOTES_LENGTH);
+}
+
+/** Clamp a text to `max` characters with an ellipsis. */
+function truncateText(text: string, max: number): string {
+  return text.length <= max ? text : `${text.slice(0, max).trimEnd()}…`;
 }
 
 /** Timestamp (ms) of the last update check, for diagnostics/throttling. */

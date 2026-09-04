@@ -62,6 +62,29 @@ describe('fetchLatestRelease', () => {
     expect(release.notes).not.toContain('](http');
   });
 
+  it('normalizes CRLF bodies and strips headings/emphasis/list markers', async () => {
+    // GitHub release bodies really use \r\n; without normalization the stray
+    // \r glues lines together on Android.
+    mockFetch(
+      jsonResponse({
+        tag_name: 'v0.4.0',
+        body: "## What's Changed\r\n\r\n* fix one\r\n* fix two\r\n\r\nsome **bold** and `code`\r\n",
+      })
+    );
+
+    const release = await fetchLatestRelease();
+
+    expect(release.notes).not.toContain('\r');
+    expect(release.notes.split('\n')).toEqual([
+      "What's Changed",
+      '',
+      '• fix one',
+      '• fix two',
+      '',
+      'some bold and code',
+    ]);
+  });
+
   it('throws with the HTTP status attached for non-OK responses', async () => {
     mockFetch(jsonResponse({ message: 'rate limited' }, 403));
 
