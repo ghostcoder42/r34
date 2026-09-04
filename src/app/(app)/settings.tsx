@@ -32,12 +32,15 @@ const SITE_DOMAIN = 'rule34video.com';
 function Row({
   label,
   value,
+  valueClassName,
   icon,
   onPress,
   loading,
 }: {
   label: string;
   value?: string;
+  /** Extra classes for the value text (e.g. highlighting a new version). */
+  valueClassName?: string;
   icon?: React.ReactNode;
   onPress?: () => void;
   loading?: boolean;
@@ -56,7 +59,9 @@ function Row({
       {loading ? (
         <ActivityIndicator size="small" />
       ) : value ? (
-        <Text className="text-neutral-500 dark:text-neutral-400">{value}</Text>
+        <Text className={`text-neutral-500 dark:text-neutral-400 ${valueClassName ?? ''}`}>
+          {value}
+        </Text>
       ) : null}
     </Pressable>
   );
@@ -315,6 +320,9 @@ export default function Settings() {
               <Row
                 label={newerRelease ? t('settings.update_available') : t('settings.version')}
                 value={newerRelease ? `v${newerRelease.version}` : Env.VERSION}
+                valueClassName={
+                  newerRelease ? 'font-semibold text-danger-600 dark:text-danger-400' : undefined
+                }
                 loading={checking}
                 onPress={() => runCheck(true)}
               />
