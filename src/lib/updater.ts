@@ -2,7 +2,6 @@ import { getItem, setItem } from '@/lib/storage';
 
 const GITHUB_LATEST_RELEASE_URL = 'https://api.github.com/repos/ghostcoder42/r34/releases/latest';
 const REQUEST_TIMEOUT_MS = 10000;
-const LAST_CHECK_KEY = 'update.last_check_at';
 const MAX_NOTES_LENGTH = 2000;
 
 export type ReleaseInfo = {
@@ -148,15 +147,6 @@ function cleanNotes(body: string): string {
 /** Clamp a text to `max` characters with an ellipsis. */
 function truncateText(text: string, max: number): string {
   return text.length <= max ? text : `${text.slice(0, max).trimEnd()}…`;
-}
-
-/** Timestamp (ms) of the last update check, for diagnostics/throttling. */
-export function recordLastUpdateCheck(): void {
-  setItem(LAST_CHECK_KEY, Date.now());
-}
-
-export function getLastUpdateCheck(): number | null {
-  return getItem<number>(LAST_CHECK_KEY);
 }
 
 const LAST_KNOWN_KEY = 'update.last_known_release';

@@ -6,6 +6,17 @@ jest.mock('@/lib/r34/fetch-error', () => ({
   fetchErrorMessage: jest.fn(() => 'classified network message'),
 }));
 
+// Controllable throttle store (real logic covered in update-check-store.test).
+const mockCheckStore = {
+  autoCheckDue: true,
+  recordCheckAt: jest.fn(),
+};
+
+jest.mock('@/lib/stores/update-check-store', () => ({
+  shouldAutoCheck: () => mockCheckStore.autoCheckDue,
+  recordCheckAt: (...args: unknown[]) => mockCheckStore.recordCheckAt(...args),
+}));
+
 const defaultRelease: import('@/lib/updater').ReleaseInfo = {
   version: '0.4.0',
   title: 'v0.4.0',
@@ -19,14 +30,12 @@ const mockUpdater = {
   error: null as Error | null,
   persisted: null as Record<string, unknown> | null,
   fetchLatestRelease: jest.fn(),
-  recordLastUpdateCheck: jest.fn(),
   saveLastKnownRelease: jest.fn(),
 };
 
 jest.mock('@/lib/updater', () => ({
   fetchLatestRelease: (...args: unknown[]) => mockUpdater.fetchLatestRelease(...args),
   isNewerVersion: (latest: string, current: string) => latest !== current && latest > current,
-  recordLastUpdateCheck: (...args: unknown[]) => mockUpdater.recordLastUpdateCheck(...args),
   saveLastKnownRelease: (...args: unknown[]) => mockUpdater.saveLastKnownRelease(...args),
   getLastKnownRelease: () => mockUpdater.persisted,
 }));
@@ -44,6 +53,7 @@ const setPlatform = (os: 'android' | 'ios') =>
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockCheckStore.autoCheckDue = true;
   mockUpdater.release = defaultRelease;
   mockUpdater.error = null;
   mockUpdater.persisted = null;
@@ -81,12 +91,21 @@ describe('useUpdateCheck', () => {
     expect(mockUpdater.saveLastKnownRelease).toHaveBeenCalledWith(mockUpdater.release);
   });
 
+  it('skips the automatic check when the daily throttle is not due', async () => {
+    mockCheckStore.autoCheckDue = false;
+
+    const { result } = renderHook(() => useUpdateCheck('0.3.0'));
+
+    expect(mockUpdater.fetchLatestRelease).not.toHaveBeenCalled();
+    expect(result.current.checking).toBe(false);
+  });
+
   it('checks automatically on mount and only flags the row (no dialogs)', async () => {
     const { result } = renderHook(() => useUpdateCheck('0.3.0'));
 
     await waitFor(() => expect(result.current.checking).toBe(false));
     expect(result.current.newerRelease?.version).toBe('0.4.0');
-    expect(mockUpdater.recordLastUpdateCheck).toHaveBeenCalledTimes(1);
+    expect(mockCheckStore.recordCheckAt).toHaveBeenCalledTimes(1);
     expect(Alert.alert).not.toHaveBeenCalled();
     expect(showMessage).not.toHaveBeenCalled();
   });

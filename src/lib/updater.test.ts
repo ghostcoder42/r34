@@ -9,12 +9,7 @@ jest.mock('@/lib/storage', () => {
   };
 });
 
-import {
-  fetchLatestRelease,
-  getLastUpdateCheck,
-  isNewerVersion,
-  recordLastUpdateCheck,
-} from './updater';
+import { fetchLatestRelease, isNewerVersion } from './updater';
 
 const jsonResponse = (body: unknown, status = 200) =>
   ({ ok: status >= 200 && status < 300, status, json: async () => body }) as unknown as Response;
@@ -126,15 +121,5 @@ describe('fetchLatestRelease', () => {
     mockFetch(jsonResponse({ tag_name: 'nightly', name: 'Nightly', body: 'x' }));
 
     await expect(fetchLatestRelease()).rejects.toThrow('Unexpected release payload');
-  });
-});
-
-describe('last-check timestamp', () => {
-  it('records and reads back the check time', () => {
-    expect(getLastUpdateCheck()).toBeNull();
-
-    recordLastUpdateCheck();
-
-    expect(getLastUpdateCheck()).toBeGreaterThan(0);
   });
 });

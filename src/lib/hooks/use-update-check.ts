@@ -4,12 +4,12 @@ import { showMessage } from 'react-native-flash-message';
 
 import i18n from '@/lib/i18n';
 import { fetchErrorMessage } from '@/lib/r34/fetch-error';
+import { recordCheckAt, shouldAutoCheck } from '@/lib/stores/update-check-store';
 import {
   type ReleaseInfo,
   fetchLatestRelease,
   getLastKnownRelease,
   isNewerVersion,
-  recordLastUpdateCheck,
   saveLastKnownRelease,
 } from '@/lib/updater';
 
@@ -29,10 +29,11 @@ type UseUpdateCheck = {
 };
 
 /**
- * Update check against the repo's latest GitHub release. Checking runs once
- * automatically on mount (i.e. every Settings visit); failures are silent in
- * that mode. Manual checks (tapping the version row) report every outcome:
- * a dialog for a new release or a failure, a toast when already up to date.
+ * Update check against the repo's latest GitHub release. The automatic check
+ * runs on mount at most once a day (update-check-store throttles it; failures
+ * don't count and simply retry on the next visit). Manual checks (tapping the
+ * version row) always run and report every outcome: a dialog for a new
+ * release or a failure, a toast when already up to date.
  *
  * The last successful check is persisted, so the "update available" hint is
  * seeded on mount and survives restarts even before the fresh fetch resolves.
@@ -55,7 +56,7 @@ export function useUpdateCheck(currentVersion: string): UseUpdateCheck {
       setChecking(true);
       try {
         const release = await fetchLatestRelease();
-        recordLastUpdateCheck();
+        recordCheckAt(Date.now());
         // Persist every successful outcome (also clears a stale newer-hint
         // once the installed version catches up).
         saveLastKnownRelease(release);
@@ -89,7 +90,9 @@ export function useUpdateCheck(currentVersion: string): UseUpdateCheck {
   );
 
   React.useEffect(() => {
-    runCheck(false);
+    if (shouldAutoCheck()) {
+      runCheck(false);
+    }
   }, [runCheck]);
 
   /**
