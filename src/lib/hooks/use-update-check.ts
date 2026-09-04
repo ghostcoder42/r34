@@ -7,8 +7,10 @@ import { fetchErrorMessage } from '@/lib/r34/fetch-error';
 import {
   type ReleaseInfo,
   fetchLatestRelease,
+  getLastKnownRelease,
   isNewerVersion,
   recordLastUpdateCheck,
+  saveLastKnownRelease,
 } from '@/lib/updater';
 
 type UseUpdateCheck = {
@@ -26,10 +28,18 @@ type UseUpdateCheck = {
  * automatically on mount (i.e. every Settings visit); failures are silent in
  * that mode. Manual checks (tapping the version row) report every outcome:
  * a dialog for a new release or a failure, a toast when already up to date.
+ *
+ * The last successful check is persisted, so the "update available" hint is
+ * seeded on mount and survives restarts even before the fresh fetch resolves.
  */
 export function useUpdateCheck(currentVersion: string): UseUpdateCheck {
   const [checking, setChecking] = React.useState(false);
-  const [newerRelease, setNewerRelease] = React.useState<ReleaseInfo | null>(null);
+  const [newerRelease, setNewerRelease] = React.useState<ReleaseInfo | null>(() => {
+    // Only seed when the persisted find still beats the installed version —
+    // after updating the app the stale hint must not come back.
+    const known = getLastKnownRelease();
+    return known && isNewerVersion(known.version, currentVersion) ? known : null;
+  });
   const inFlight = React.useRef(false);
 
   const runCheck = React.useCallback(
@@ -40,6 +50,9 @@ export function useUpdateCheck(currentVersion: string): UseUpdateCheck {
       try {
         const release = await fetchLatestRelease();
         recordLastUpdateCheck();
+        // Persist every successful outcome (also clears a stale newer-hint
+        // once the installed version catches up).
+        saveLastKnownRelease(release);
         if (isNewerVersion(release.version, currentVersion)) {
           setNewerRelease(release);
           if (manual) {

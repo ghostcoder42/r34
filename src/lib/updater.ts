@@ -158,3 +158,18 @@ export function recordLastUpdateCheck(): void {
 export function getLastUpdateCheck(): number | null {
   return getItem<number>(LAST_CHECK_KEY);
 }
+
+const LAST_KNOWN_KEY = 'update.last_known_release';
+
+/**
+ * Persists the outcome of the last successful check so the "update available"
+ * hint survives an app restart — Settings can show it before/without a fresh
+ * fetch (e.g. offline).
+ */
+export function saveLastKnownRelease(release: ReleaseInfo): void {
+  setItem(LAST_KNOWN_KEY, release);
+}
+
+export function getLastKnownRelease(): ReleaseInfo | null {
+  return getItem<ReleaseInfo>(LAST_KNOWN_KEY);
+}

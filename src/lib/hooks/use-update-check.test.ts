@@ -9,14 +9,18 @@ jest.mock('@/lib/r34/fetch-error', () => ({
 const mockUpdater = {
   release: { version: '0.4.0', title: 'v0.4.0', notes: "What's Changed\n* fix x" },
   error: null as Error | null,
+  persisted: null as Record<string, unknown> | null,
   fetchLatestRelease: jest.fn(),
   recordLastUpdateCheck: jest.fn(),
+  saveLastKnownRelease: jest.fn(),
 };
 
 jest.mock('@/lib/updater', () => ({
   fetchLatestRelease: (...args: unknown[]) => mockUpdater.fetchLatestRelease(...args),
   isNewerVersion: (latest: string, current: string) => latest !== current && latest > current,
   recordLastUpdateCheck: (...args: unknown[]) => mockUpdater.recordLastUpdateCheck(...args),
+  saveLastKnownRelease: (...args: unknown[]) => mockUpdater.saveLastKnownRelease(...args),
+  getLastKnownRelease: () => mockUpdater.persisted,
 }));
 
 import { act, renderHook, waitFor } from '@testing-library/react-native';
@@ -30,6 +34,7 @@ jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 beforeEach(() => {
   jest.clearAllMocks();
   mockUpdater.error = null;
+  mockUpdater.persisted = null;
   mockUpdater.fetchLatestRelease.mockImplementation(async () => {
     if (mockUpdater.error) throw mockUpdater.error;
     return mockUpdater.release;
@@ -37,6 +42,33 @@ beforeEach(() => {
 });
 
 describe('useUpdateCheck', () => {
+  it('seeds the hint from the persisted last check so it survives restarts', () => {
+    mockUpdater.persisted = { version: '0.4.0', title: 'v0.4.0', notes: '' };
+    // The automatic fetch never resolves — the seed alone must light the row.
+    mockUpdater.fetchLatestRelease.mockImplementation(() => new Promise(() => {}));
+
+    const { result } = renderHook(() => useUpdateCheck('0.3.0'));
+
+    expect(result.current.newerRelease?.version).toBe('0.4.0');
+  });
+
+  it('does not seed a persisted hint that no longer beats the installed version', () => {
+    // User already updated past the persisted find (e.g. installed manually).
+    mockUpdater.persisted = { version: '0.3.0', title: 'v0.3.0', notes: '' };
+    mockUpdater.fetchLatestRelease.mockImplementation(() => new Promise(() => {}));
+
+    const { result } = renderHook(() => useUpdateCheck('0.3.0'));
+
+    expect(result.current.newerRelease).toBeNull();
+  });
+
+  it('persists every successful check, up to date or not', async () => {
+    const { result } = renderHook(() => useUpdateCheck('0.4.0')); // same as latest
+    await waitFor(() => expect(result.current.checking).toBe(false));
+
+    expect(mockUpdater.saveLastKnownRelease).toHaveBeenCalledWith(mockUpdater.release);
+  });
+
   it('checks automatically on mount and only flags the row (no dialogs)', async () => {
     const { result } = renderHook(() => useUpdateCheck('0.3.0'));
 
