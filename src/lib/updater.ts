@@ -10,9 +10,69 @@ export type ReleaseInfo = {
   version: string;
   /** Release title (np uses the tag, e.g. "v0.4.0"). */
   title: string;
-  /** Release notes with markdown links flattened to their text. */
+  /** Release notes with markdown flattened to plain text. */
   notes: string;
+  /** Human-facing release page (works on every platform). */
+  releaseUrl: string;
+  /** Direct APK download URL when the release ships one (null otherwise). */
+  apkUrl: string | null;
+  /** APK asset size in bytes when an APK asset exists. */
+  apkSize?: number;
+  /** ISO publication timestamp, shown as a plain date (no Intl needed). */
+  publishedAt?: string;
 };
+
+type GithubReleaseAsset = { name?: unknown; size?: unknown; browser_download_url?: unknown };
+type GithubReleaseJson = {
+  tag_name?: unknown;
+  name?: unknown;
+  published_at?: unknown;
+  body?: unknown;
+  html_url?: unknown;
+  assets?: unknown;
+};
+
+/** Normalizes the GitHub /releases/latest payload; throws on unusable data. */
+function parseRelease(json: GithubReleaseJson): ReleaseInfo {
+  const tag = typeof json.tag_name === 'string' ? json.tag_name.replace(/^v/, '').trim() : '';
+  if (!tag || !/^\d+(\.\d+)*$/.test(tag)) {
+    throw new Error('Unexpected release payload');
+  }
+
+  const releaseUrl =
+    typeof json.html_url === 'string' && json.html_url
+      ? json.html_url
+      : 'https://github.com/ghostcoder42/r34/releases/latest';
+
+  let apkUrl: string | null = null;
+  let apkSize: number | undefined;
+  if (Array.isArray(json.assets)) {
+    for (const asset of json.assets as GithubReleaseAsset[]) {
+      if (
+        typeof asset.name === 'string' &&
+        asset.name.endsWith('.apk') &&
+        typeof asset.browser_download_url === 'string'
+      ) {
+        apkUrl = asset.browser_download_url;
+        if (typeof asset.size === 'number' && asset.size > 0) apkSize = asset.size;
+        break;
+      }
+    }
+  }
+
+  const publishedAt =
+    typeof json.published_at === 'string' && json.published_at ? json.published_at : undefined;
+
+  return {
+    version: tag,
+    title: (typeof json.name === 'string' && json.name.trim()) || `v${tag}`,
+    notes: cleanNotes(typeof json.body === 'string' ? json.body : ''),
+    releaseUrl,
+    apkUrl,
+    apkSize,
+    publishedAt,
+  };
+}
 
 /**
  * Fetches the latest published GitHub release. The repo is public, so the
@@ -38,13 +98,7 @@ export async function fetchLatestRelease(): Promise<ReleaseInfo> {
       error.status = response.status;
       throw error;
     }
-    const json = (await response.json()) as { tag_name?: unknown; name?: unknown; body?: unknown };
-    const tag = typeof json.tag_name === 'string' ? json.tag_name : '';
-    return {
-      version: normalizeVersion(tag),
-      title: (typeof json.name === 'string' && json.name) || tag,
-      notes: cleanNotes(typeof json.body === 'string' ? json.body : ''),
-    };
+    return parseRelease(await response.json());
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       throw new Error('Request timed out: release info');
@@ -53,11 +107,6 @@ export async function fetchLatestRelease(): Promise<ReleaseInfo> {
   } finally {
     clearTimeout(timeout);
   }
-}
-
-/** Strips a leading "v" from a git tag, e.g. "v0.4.0" → "0.4.0". */
-function normalizeVersion(tag: string): string {
-  return tag.replace(/^v/, '');
 }
 
 /** Numeric component-wise comparison; true when `latest` is newer than `current`. */

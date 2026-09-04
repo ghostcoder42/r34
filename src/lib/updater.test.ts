@@ -90,6 +90,43 @@ describe('fetchLatestRelease', () => {
 
     await expect(fetchLatestRelease()).rejects.toMatchObject({ status: 403 });
   });
+
+  it('extracts the release page URL, APK asset link/size and publish date', async () => {
+    mockFetch(
+      jsonResponse({
+        tag_name: 'v0.4.0',
+        html_url: 'https://github.com/ghostcoder42/r34/releases/tag/v0.4.0',
+        published_at: '2026-09-05T10:00:00Z',
+        assets: [
+          { name: 'source.zip', browser_download_url: 'https://x/source.zip' },
+          { name: 'r34-0.4.0.apk', size: 42000000, browser_download_url: 'https://x/r34.apk' },
+        ],
+      })
+    );
+
+    const release = await fetchLatestRelease();
+
+    expect(release.releaseUrl).toBe('https://github.com/ghostcoder42/r34/releases/tag/v0.4.0');
+    expect(release.apkUrl).toBe('https://x/r34.apk');
+    expect(release.apkSize).toBe(42000000);
+    expect(release.publishedAt).toBe('2026-09-05T10:00:00Z');
+  });
+
+  it('keeps apkUrl null when the release ships no APK asset', async () => {
+    mockFetch(jsonResponse({ tag_name: 'v0.4.0', assets: [] }));
+
+    const release = await fetchLatestRelease();
+
+    expect(release.apkUrl).toBeNull();
+    expect(release.apkSize).toBeUndefined();
+    expect(release.releaseUrl).toBe('https://github.com/ghostcoder42/r34/releases/latest');
+  });
+
+  it('rejects payloads without a numeric dotted tag', async () => {
+    mockFetch(jsonResponse({ tag_name: 'nightly', name: 'Nightly', body: 'x' }));
+
+    await expect(fetchLatestRelease()).rejects.toThrow('Unexpected release payload');
+  });
 });
 
 describe('last-check timestamp', () => {
