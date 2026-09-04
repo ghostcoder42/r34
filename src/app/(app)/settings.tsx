@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import * as LocalAuthentication from 'expo-local-authentication';
 import type * as React from 'react';
 import { useEffect, useState } from 'react';
-import { Alert, Platform, Pressable, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, TouchableOpacity } from 'react-native';
 
 import { AppIconItem } from '@/components/settings/app-icon-item';
 import { ItemsContainer } from '@/components/settings/items-container';
@@ -12,6 +12,7 @@ import { ThemeItem } from '@/components/settings/theme-item';
 import { FocusAwareStatusBar, SafeAreaView, ScrollView, Text, View, colors } from '@/components/ui';
 import { Trash } from '@/components/ui/icons';
 import { LOCK_TIMEOUT_OPTIONS, useSecuritySettings } from '@/lib/hooks/use-security-settings';
+import { useUpdateCheck } from '@/lib/hooks/use-update-check';
 import { useTranslate } from '@/lib/i18n';
 import { useDownloadedStore } from '@/lib/stores/downloaded-store';
 import { ORIENTATIONS, useOrientationStore } from '@/lib/stores/orientation-store';
@@ -25,17 +26,20 @@ const SITE_DOMAIN = 'rule34video.com';
 /**
  * A plain-text settings row. `label` is a pre-translated string passed in by
  * the caller (build it via useTranslate() with a settings.* translation key).
+ * `loading` swaps the value for a spinner (used by the update check).
  */
 function Row({
   label,
   value,
   icon,
   onPress,
+  loading,
 }: {
   label: string;
   value?: string;
   icon?: React.ReactNode;
   onPress?: () => void;
+  loading?: boolean;
 }) {
   const actionable = onPress !== undefined;
   return (
@@ -48,7 +52,11 @@ function Row({
         {icon ? <View className="pr-2">{icon}</View> : null}
         <Text className="text-neutral-900 dark:text-neutral-100">{label}</Text>
       </View>
-      {value ? <Text className="text-neutral-500 dark:text-neutral-400">{value}</Text> : null}
+      {loading ? (
+        <ActivityIndicator size="small" />
+      ) : value ? (
+        <Text className="text-neutral-500 dark:text-neutral-400">{value}</Text>
+      ) : null}
     </Pressable>
   );
 }
@@ -65,6 +73,7 @@ export default function Settings() {
   const { appLock, setAppLock, lockTimeoutMs, setLockTimeoutMs, hidePreview, setHidePreview } =
     useSecuritySettings();
   const [biometricsAvailable, setBiometricsAvailable] = useState(false);
+  const { checking, newerRelease, runCheck } = useUpdateCheck(Env.VERSION);
 
   useEffect(() => {
     LocalAuthentication.hasHardwareAsync().then((has) => {
@@ -295,7 +304,12 @@ export default function Settings() {
             {/* About */}
             <ItemsContainer title="settings.about">
               <Row label={t('settings.app_name')} value={Env.NAME} />
-              <Row label={t('settings.version')} value={Env.VERSION} />
+              <Row
+                label={newerRelease ? t('settings.update_available') : t('settings.version')}
+                value={newerRelease ? `v${newerRelease.version}` : Env.VERSION}
+                loading={checking}
+                onPress={() => runCheck(true)}
+              />
             </ItemsContainer>
 
             <View className="h-8" />
