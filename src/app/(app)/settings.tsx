@@ -11,6 +11,7 @@ import { LanguageItem } from '@/components/settings/language-item';
 import { ThemeItem } from '@/components/settings/theme-item';
 import { FocusAwareStatusBar, SafeAreaView, ScrollView, Text, View, colors } from '@/components/ui';
 import { Trash } from '@/components/ui/icons';
+import { UpdateDialog } from '@/components/update-dialog';
 import { LOCK_TIMEOUT_OPTIONS, useSecuritySettings } from '@/lib/hooks/use-security-settings';
 import { useUpdateCheck } from '@/lib/hooks/use-update-check';
 import { useTranslate } from '@/lib/i18n';
@@ -73,7 +74,14 @@ export default function Settings() {
   const { appLock, setAppLock, lockTimeoutMs, setLockTimeoutMs, hidePreview, setHidePreview } =
     useSecuritySettings();
   const [biometricsAvailable, setBiometricsAvailable] = useState(false);
-  const { checking, newerRelease, runCheck } = useUpdateCheck(Env.VERSION);
+  const {
+    checking,
+    newerRelease,
+    pendingRelease,
+    runCheck,
+    dismissUpdateDialog,
+    openReleaseDownload,
+  } = useUpdateCheck(Env.VERSION);
 
   useEffect(() => {
     LocalAuthentication.hasHardwareAsync().then((has) => {
@@ -316,6 +324,13 @@ export default function Settings() {
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      <UpdateDialog
+        release={pendingRelease}
+        currentVersion={Env.VERSION}
+        onClose={dismissUpdateDialog}
+        onDownload={openReleaseDownload}
+      />
     </>
   );
 }

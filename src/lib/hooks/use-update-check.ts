@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Alert } from 'react-native';
+import { Alert, Linking, Platform } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 
 import i18n from '@/lib/i18n';
@@ -21,6 +21,11 @@ type UseUpdateCheck = {
   /** Runs a check. Manual checks surface every outcome; automatic ones are
    *  silent unless a newer release is found (then only the row text changes). */
   runCheck: (manual: boolean) => Promise<void>;
+  /** Release shown in the in-app update dialog (manual checks only). */
+  pendingRelease: ReleaseInfo | null;
+  dismissUpdateDialog: () => void;
+  /** Opens the APK direct link on Android, the release page elsewhere. */
+  openReleaseDownload: (release: ReleaseInfo) => void;
 };
 
 /**
@@ -34,6 +39,7 @@ type UseUpdateCheck = {
  */
 export function useUpdateCheck(currentVersion: string): UseUpdateCheck {
   const [checking, setChecking] = React.useState(false);
+  const [pendingRelease, setPendingRelease] = React.useState<ReleaseInfo | null>(null);
   const [newerRelease, setNewerRelease] = React.useState<ReleaseInfo | null>(() => {
     // Only seed when the persisted find still beats the installed version —
     // after updating the app the stale hint must not come back.
@@ -56,7 +62,7 @@ export function useUpdateCheck(currentVersion: string): UseUpdateCheck {
         if (isNewerVersion(release.version, currentVersion)) {
           setNewerRelease(release);
           if (manual) {
-            announceNewRelease(release);
+            setPendingRelease(release);
           }
         } else {
           setNewerRelease(null);
@@ -86,15 +92,30 @@ export function useUpdateCheck(currentVersion: string): UseUpdateCheck {
     runCheck(false);
   }, [runCheck]);
 
-  return { checking, newerRelease, runCheck };
+  /**
+   * Android prefers the release's direct APK asset (what EAS attaches);
+   * everything else lands on the human-facing release page.
+   */
+  const openReleaseDownload = React.useCallback((release: ReleaseInfo) => {
+    const url =
+      Platform.OS === 'android' ? (release.apkUrl ?? release.releaseUrl) : release.releaseUrl;
+    Linking.openURL(url).catch(() => {
+      // Nothing sensible to do when no browser/installer picks it up.
+    });
+  }, []);
+
+  return {
+    checking,
+    newerRelease,
+    /** Release shown in the in-app dialog; set only by manual checks. */
+    pendingRelease,
+    runCheck,
+    dismissUpdateDialog: () => setPendingRelease(null),
+    openReleaseDownload,
+  };
 }
 
 function translate(key: string, options?: Record<string, unknown>): string {
   const t = i18n.t.bind(i18n) as (key: string, options?: Record<string, unknown>) => string;
   return t(key, options ?? {});
-}
-
-function announceNewRelease(release: ReleaseInfo): void {
-  const body = [release.title, release.notes].filter(Boolean).join('\n\n');
-  Alert.alert(translate('settings.update_available_title', { version: release.version }), body);
 }

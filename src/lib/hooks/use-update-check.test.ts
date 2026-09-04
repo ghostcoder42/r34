@@ -6,8 +6,16 @@ jest.mock('@/lib/r34/fetch-error', () => ({
   fetchErrorMessage: jest.fn(() => 'classified network message'),
 }));
 
+const defaultRelease: import('@/lib/updater').ReleaseInfo = {
+  version: '0.4.0',
+  title: 'v0.4.0',
+  notes: "What's Changed\n* fix x",
+  releaseUrl: 'https://github.com/ghostcoder42/r34/releases/tag/v0.4.0',
+  apkUrl: null,
+};
+
 const mockUpdater = {
-  release: { version: '0.4.0', title: 'v0.4.0', notes: "What's Changed\n* fix x" },
+  release: defaultRelease,
   error: null as Error | null,
   persisted: null as Record<string, unknown> | null,
   fetchLatestRelease: jest.fn(),
@@ -24,15 +32,19 @@ jest.mock('@/lib/updater', () => ({
 }));
 
 import { act, renderHook, waitFor } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { Alert, Linking, Platform } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 
 import { useUpdateCheck } from './use-update-check';
 
 jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined as never);
+const setPlatform = (os: 'android' | 'ios') =>
+  Object.defineProperty(Platform, 'OS', { value: os, configurable: true, writable: true });
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockUpdater.release = defaultRelease;
   mockUpdater.error = null;
   mockUpdater.persisted = null;
   mockUpdater.fetchLatestRelease.mockImplementation(async () => {
@@ -90,7 +102,7 @@ describe('useUpdateCheck', () => {
     expect(showMessage).not.toHaveBeenCalled();
   });
 
-  it('manual check announces a new release with a dialog (title + notes)', async () => {
+  it('manual check with a new release opens the in-app dialog, not an Alert', async () => {
     const { result } = renderHook(() => useUpdateCheck('0.3.0'));
     await waitFor(() => expect(result.current.checking).toBe(false));
 
@@ -98,10 +110,31 @@ describe('useUpdateCheck', () => {
       await result.current.runCheck(true);
     });
 
-    expect(Alert.alert).toHaveBeenCalledTimes(1);
-    const [title, body] = (Alert.alert as jest.Mock).mock.calls[0];
-    expect(title).toContain('0.4.0');
-    expect(body).toContain("What's Changed");
+    expect(Alert.alert).not.toHaveBeenCalled();
+    expect(result.current.pendingRelease?.version).toBe('0.4.0');
+
+    act(() => result.current.dismissUpdateDialog());
+    expect(result.current.pendingRelease).toBeNull();
+  });
+
+  it('opens the APK direct link on Android and the release page on iOS', async () => {
+    mockUpdater.release = {
+      version: '0.4.0',
+      title: 'v0.4.0',
+      notes: '',
+      releaseUrl: 'https://github.com/ghostcoder42/r34/releases/tag/v0.4.0',
+      apkUrl: 'https://github.com/ghostcoder42/r34/releases/download/v0.4.0/r34-0.4.0.apk',
+    };
+    const { result } = renderHook(() => useUpdateCheck('0.3.0'));
+    await waitFor(() => expect(result.current.checking).toBe(false));
+
+    setPlatform('android');
+    result.current.openReleaseDownload(mockUpdater.release);
+    expect(Linking.openURL).toHaveBeenLastCalledWith(mockUpdater.release.apkUrl);
+
+    setPlatform('ios');
+    result.current.openReleaseDownload(mockUpdater.release);
+    expect(Linking.openURL).toHaveBeenLastCalledWith(mockUpdater.release.releaseUrl);
   });
 
   it('manual check toasts when already up to date', async () => {
