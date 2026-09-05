@@ -20,6 +20,8 @@
     "app_lock": "应用锁",
     "app_name": "应用名称",
     "auto_lock_after": "自动锁定于",
+    "autoplay": "自动播放",
+    "autoplay_desc": "打开视频页时自动开始播放",
     "bottom_tabs": "底部标签",
     "bottom_tabs_desc": "首页和设置始终显示。",
     "cache_cleared": "图片缓存已清除。",
@@ -73,6 +75,7 @@
     "update_check_failed": "检查更新失败",
     "update_now": "立即更新",
     "version": "版本",
+    "video_playback": "视频播放",
     "website": "网站",
     "wifi_only": "仅 WiFi 下载"
   },

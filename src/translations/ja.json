@@ -20,6 +20,8 @@
     "app_lock": "アプリロック",
     "app_name": "アプリ名",
     "auto_lock_after": "自動ロックの時間",
+    "autoplay": "自動再生",
+    "autoplay_desc": "動画ページを開いたときに自動で再生する",
     "bottom_tabs": "ボトムタブ",
     "bottom_tabs_desc": "ホームと設定は常に表示されます。",
     "cache_cleared": "画像キャッシュをクリアしました。",
@@ -73,6 +75,7 @@
     "update_check_failed": "アップデートの確認に失敗しました",
     "update_now": "今すぐ更新",
     "version": "バージョン",
+    "video_playback": "動画再生",
     "website": "ウェブサイト",
     "wifi_only": "Wi-Fi のみダウンロード"
   },

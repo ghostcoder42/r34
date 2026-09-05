@@ -14,6 +14,7 @@ import { Trash } from '@/components/ui/icons';
 import { UpdateDialog } from '@/components/update-dialog';
 import { LOCK_TIMEOUT_OPTIONS, useSecuritySettings } from '@/lib/hooks/use-security-settings';
 import { useUpdateCheck } from '@/lib/hooks/use-update-check';
+import { useVideoAutoplay } from '@/lib/hooks/use-video-autoplay';
 import { useTranslate } from '@/lib/i18n';
 import { useDownloadedStore } from '@/lib/stores/downloaded-store';
 import { ORIENTATIONS, useOrientationStore } from '@/lib/stores/orientation-store';
@@ -90,6 +91,7 @@ export default function Settings() {
     dismissUpdateDialog,
     openReleaseDownload,
   } = useUpdateCheck(Env.VERSION);
+  const { autoplayEnabled, setAutoplayEnabled } = useVideoAutoplay();
 
   useEffect(() => {
     LocalAuthentication.hasHardwareAsync().then((has) => {
@@ -239,6 +241,37 @@ export default function Settings() {
                 className="text-neutral-500 dark:text-neutral-400 mt-1 px-1 text-xs"
                 tx="settings.bottom_tabs_desc"
               />
+            </View>
+
+            {/* Video playback */}
+            <View className="pt-2">
+              <Text
+                className="text-neutral-900 dark:text-neutral-100 pb-1 text-lg"
+                tx="settings.video_playback"
+              />
+              <View className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-800">
+                <View className="flex-row items-center justify-between px-4 py-3">
+                  <View className="flex-1 pr-2">
+                    <Text
+                      className="text-neutral-900 dark:text-neutral-100"
+                      tx="settings.autoplay"
+                    />
+                    <Text
+                      className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-xs"
+                      tx="settings.autoplay_desc"
+                    />
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setAutoplayEnabled(!autoplayEnabled)}
+                    testID="autoplay-toggle"
+                    className={`h-6 w-11 rounded-full ${autoplayEnabled ? 'bg-primary-500' : 'bg-neutral-300 dark:bg-neutral-600'}`}
+                  >
+                    <View
+                      className={`mt-0.5 h-5 w-5 rounded-full bg-white ${autoplayEnabled ? 'ml-5' : 'ml-0.5'}`}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
 
             {/* Content orientation (multi-select, applied via the flag1 URL param) */}

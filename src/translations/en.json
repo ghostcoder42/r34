@@ -20,6 +20,8 @@
     "app_lock": "App Lock",
     "app_name": "App Name",
     "auto_lock_after": "Auto-Lock After",
+    "autoplay": "Autoplay",
+    "autoplay_desc": "Start playing automatically when a video page opens",
     "bottom_tabs": "Bottom Tabs",
     "bottom_tabs_desc": "Home and Settings are always visible.",
     "cache_cleared": "Image cache cleared.",
@@ -73,6 +75,7 @@
     "update_check_failed": "Update check failed",
     "update_now": "Update now",
     "version": "Version",
+    "video_playback": "Video playback",
     "website": "Website",
     "wifi_only": "WiFi Only Downloads"
   },
