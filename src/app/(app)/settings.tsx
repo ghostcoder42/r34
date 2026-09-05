@@ -27,7 +27,7 @@ const SITE_DOMAIN = 'rule34video.com';
 /**
  * A plain-text settings row. `label` is a pre-translated string passed in by
  * the caller (build it via useTranslate() with a settings.* translation key).
- * `loading` swaps the value for a spinner (used by the update check).
+ * `loading` shows a spinner left of the value (used by the update check).
  */
 function Row({
   label,
@@ -56,12 +56,15 @@ function Row({
         {icon ? <View className="pr-2">{icon}</View> : null}
         <Text className="text-neutral-900 dark:text-neutral-100">{label}</Text>
       </View>
-      {loading ? (
+      {value ? (
+        <View className="flex-row items-center">
+          {loading ? <ActivityIndicator size="small" className="pr-2" /> : null}
+          <Text className={`text-neutral-500 dark:text-neutral-400 ${valueClassName ?? ''}`}>
+            {value}
+          </Text>
+        </View>
+      ) : loading ? (
         <ActivityIndicator size="small" />
-      ) : value ? (
-        <Text className={`text-neutral-500 dark:text-neutral-400 ${valueClassName ?? ''}`}>
-          {value}
-        </Text>
       ) : null}
     </Pressable>
   );
@@ -319,7 +322,7 @@ export default function Settings() {
               <Row label={t('settings.app_name')} value={Env.NAME} />
               <Row
                 label={newerRelease ? t('settings.update_available') : t('settings.version')}
-                value={newerRelease ? `v${newerRelease.version}` : Env.VERSION}
+                value={`v${newerRelease ? newerRelease.version : Env.VERSION}`}
                 valueClassName={
                   newerRelease ? 'font-semibold text-danger-600 dark:text-danger-400' : undefined
                 }
