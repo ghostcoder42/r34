@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import * as LocalAuthentication from 'expo-local-authentication';
 import type * as React from 'react';
 import { useEffect, useState } from 'react';
-import { Alert, Platform, Pressable, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, TouchableOpacity } from 'react-native';
 
 import { AppIconItem } from '@/components/settings/app-icon-item';
 import { ItemsContainer } from '@/components/settings/items-container';
@@ -11,7 +11,9 @@ import { LanguageItem } from '@/components/settings/language-item';
 import { ThemeItem } from '@/components/settings/theme-item';
 import { FocusAwareStatusBar, SafeAreaView, ScrollView, Text, View, colors } from '@/components/ui';
 import { Trash } from '@/components/ui/icons';
+import { UpdateDialog } from '@/components/update-dialog';
 import { LOCK_TIMEOUT_OPTIONS, useSecuritySettings } from '@/lib/hooks/use-security-settings';
+import { useUpdateCheck } from '@/lib/hooks/use-update-check';
 import { useTranslate } from '@/lib/i18n';
 import { useDownloadedStore } from '@/lib/stores/downloaded-store';
 import { ORIENTATIONS, useOrientationStore } from '@/lib/stores/orientation-store';
@@ -25,17 +27,23 @@ const SITE_DOMAIN = 'rule34video.com';
 /**
  * A plain-text settings row. `label` is a pre-translated string passed in by
  * the caller (build it via useTranslate() with a settings.* translation key).
+ * `loading` shows a spinner left of the value (used by the update check).
  */
 function Row({
   label,
   value,
+  valueClassName,
   icon,
   onPress,
+  loading,
 }: {
   label: string;
   value?: string;
+  /** Extra classes for the value text (e.g. highlighting a new version). */
+  valueClassName?: string;
   icon?: React.ReactNode;
   onPress?: () => void;
+  loading?: boolean;
 }) {
   const actionable = onPress !== undefined;
   return (
@@ -48,7 +56,16 @@ function Row({
         {icon ? <View className="pr-2">{icon}</View> : null}
         <Text className="text-neutral-900 dark:text-neutral-100">{label}</Text>
       </View>
-      {value ? <Text className="text-neutral-500 dark:text-neutral-400">{value}</Text> : null}
+      {value ? (
+        <View className="flex-row items-center">
+          {loading ? <ActivityIndicator size="small" className="pr-2" /> : null}
+          <Text className={`text-neutral-500 dark:text-neutral-400 ${valueClassName ?? ''}`}>
+            {value}
+          </Text>
+        </View>
+      ) : loading ? (
+        <ActivityIndicator size="small" />
+      ) : null}
     </Pressable>
   );
 }
@@ -65,6 +82,14 @@ export default function Settings() {
   const { appLock, setAppLock, lockTimeoutMs, setLockTimeoutMs, hidePreview, setHidePreview } =
     useSecuritySettings();
   const [biometricsAvailable, setBiometricsAvailable] = useState(false);
+  const {
+    checking,
+    newerRelease,
+    pendingRelease,
+    runCheck,
+    dismissUpdateDialog,
+    openReleaseDownload,
+  } = useUpdateCheck(Env.VERSION);
 
   useEffect(() => {
     LocalAuthentication.hasHardwareAsync().then((has) => {
@@ -295,13 +320,28 @@ export default function Settings() {
             {/* About */}
             <ItemsContainer title="settings.about">
               <Row label={t('settings.app_name')} value={Env.NAME} />
-              <Row label={t('settings.version')} value={Env.VERSION} />
+              <Row
+                label={newerRelease ? t('settings.update_available') : t('settings.version')}
+                value={`v${newerRelease ? newerRelease.version : Env.VERSION}`}
+                valueClassName={
+                  newerRelease ? 'font-semibold text-danger-600 dark:text-danger-400' : undefined
+                }
+                loading={checking}
+                onPress={() => runCheck(true)}
+              />
             </ItemsContainer>
 
             <View className="h-8" />
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      <UpdateDialog
+        release={pendingRelease}
+        currentVersion={Env.VERSION}
+        onClose={dismissUpdateDialog}
+        onDownload={openReleaseDownload}
+      />
     </>
   );
 }

@@ -38,16 +38,28 @@ const MESSAGE_KEYS: Record<FetchErrorKind, string> = {
 };
 
 /**
+ * The localized message for a classified fetch error (see MESSAGE_KEYS) —
+ * used by the toast below and by dialogs that need the same wording.
+ */
+export function fetchErrorMessage(error: unknown): string {
+  const kind = classifyFetchError(error);
+  const status = (error as (Error & { status?: number }) | null)?.status;
+  const translate = i18n.t.bind(i18n) as (key: string, options?: Record<string, unknown>) => string;
+  return translate(MESSAGE_KEYS[kind], {
+    ...(typeof status === 'number' ? { status: String(status) } : {}),
+  });
+}
+
+/**
  * Small centered toast describing a failed fetch. Messages are classified
  * (see `classifyFetchError`) and localized; server/other-HTTP messages carry
  * the status code, e.g. "The site is having trouble (502) — try again later".
  */
 export function showFetchErrorToast(error: unknown): void {
-  const kind = classifyFetchError(error);
-  const status = (error as (Error & { status?: number }) | null)?.status;
-  const translate = i18n.t.bind(i18n) as (key: string, options?: Record<string, unknown>) => string;
-  const message = translate(MESSAGE_KEYS[kind], {
-    ...(typeof status === 'number' ? { status: String(status) } : {}),
+  showMessage({
+    message: fetchErrorMessage(error),
+    type: 'warning',
+    position: 'center',
+    duration: 2500,
   });
-  showMessage({ message, type: 'warning', position: 'center', duration: 2500 });
 }

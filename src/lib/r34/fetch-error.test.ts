@@ -6,7 +6,7 @@ import { showMessage } from 'react-native-flash-message';
 
 import { resources } from '@/lib/i18n/resources';
 
-import { classifyFetchError, showFetchErrorToast } from './fetch-error';
+import { classifyFetchError, fetchErrorMessage, showFetchErrorToast } from './fetch-error';
 
 const httpError = (status: number) => {
   const error = new Error(`Failed to fetch https://rule34video.com/x/: ${status}`) as Error & {
@@ -35,6 +35,17 @@ describe('classifyFetchError', () => {
   it('falls back to offline for unknown shapes', () => {
     expect(classifyFetchError(null)).toBe('offline');
     expect(classifyFetchError('boom')).toBe('offline');
+  });
+});
+
+describe('fetchErrorMessage', () => {
+  it('returns the same localized wording the toast uses, for dialogs', () => {
+    expect(fetchErrorMessage(httpError(502))).toBe(
+      resources.en.translation.net.server.replace('{{status}}', '502')
+    );
+    expect(fetchErrorMessage(new Error('Network request failed'))).toBe(
+      resources.en.translation.net.offline
+    );
   });
 });
 
