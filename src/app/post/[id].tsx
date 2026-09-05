@@ -8,6 +8,7 @@ import { showMessage } from 'react-native-flash-message';
 import { useVideoDetail } from '@/api/video-queries';
 import { ActivityIndicator, Button, FocusAwareStatusBar, Text } from '@/components/ui';
 import { useVideoDownload } from '@/lib/hooks';
+import { useVideoAutoplay } from '@/lib/hooks/use-video-autoplay';
 import { useTranslate } from '@/lib/i18n';
 import { artistChipLabel } from '@/lib/r34/artists';
 import { toOfflineDetail } from '@/lib/r34/offline-detail';
@@ -69,6 +70,8 @@ function VideoSection({ data }: VideoSectionProps): React.ReactElement {
 
   const videoSource = isDownloaded && fileUri ? fileUri : selectedFormat?.url || '';
 
+  const { autoplayEnabled } = useVideoAutoplay();
+
   const player = useVideoPlayer(videoSource, (player) => {
     player.loop = true;
   });
@@ -76,6 +79,16 @@ function VideoSection({ data }: VideoSectionProps): React.ReactElement {
   const { isPlaying } = useEvent(player, 'playingChange', {
     isPlaying: player.playing,
   });
+
+  // Start playback when the page opens (and when the source changes, e.g. a
+  // quality switch or the download taking over) — unless the user turned
+  // autoplay off. Manual pausing is never overridden: the effect only runs
+  // when the source or the setting itself changes.
+  React.useEffect(() => {
+    if (autoplayEnabled && videoSource) {
+      player.play();
+    }
+  }, [autoplayEnabled, player, videoSource]);
 
   // The screen stays mounted in the stack after navigating away (e.g. to a
   // tag or another post), so the player keeps playing — and two posts pushed

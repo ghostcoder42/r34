@@ -72,6 +72,15 @@ jest.mock('react-native-flash-message', () => ({
   showMessage: jest.fn(),
 }));
 
+const mockAutoplay = { enabled: true };
+
+jest.mock('@/lib/hooks/use-video-autoplay', () => ({
+  useVideoAutoplay: () => ({
+    autoplayEnabled: mockAutoplay.enabled,
+    setAutoplayEnabled: jest.fn(),
+  }),
+}));
+
 jest.mock('@/lib/hooks', () => ({
   useVideoDownload: (props: { videoId: string }) => ({
     isDownloading: false,
@@ -122,6 +131,7 @@ const seedDownload = (quality: string) => {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockAutoplay.enabled = true;
   mockPlayer.playing = false;
   mockDownloadState.existingFiles = new Set<string>();
   mockDetailState.isError = false;
@@ -219,6 +229,24 @@ describe('Post screen — player source selection', () => {
     await user.press(screen.getByText('720p'));
 
     await waitFor(() => expect(lastPlayerSource()).toBe('https://example.com/v1_720p.mp4'));
+  });
+});
+
+describe('Post screen — autoplay', () => {
+  it('starts playback automatically once a source is available', async () => {
+    setup(<Post />);
+
+    await waitFor(() => expect(lastPlayerSource()).toBe('https://example.com/v1_720p.mp4'));
+    expect(mockPlayer.play).toHaveBeenCalled();
+  });
+
+  it('does not start playback when autoplay is turned off', async () => {
+    mockAutoplay.enabled = false;
+
+    setup(<Post />);
+
+    await waitFor(() => expect(lastPlayerSource()).toBe('https://example.com/v1_720p.mp4'));
+    expect(mockPlayer.play).not.toHaveBeenCalled();
   });
 });
 

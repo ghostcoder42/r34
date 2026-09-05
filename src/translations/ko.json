@@ -20,6 +20,8 @@
     "app_lock": "앱 잠금",
     "app_name": "앱 이름",
     "auto_lock_after": "자동 잠금 시간",
+    "autoplay": "자동 재생",
+    "autoplay_desc": "동영상 페이지를 열면 자동으로 재생합니다",
     "bottom_tabs": "하단 탭",
     "bottom_tabs_desc": "홈과 설정은 항상 표시됩니다.",
     "cache_cleared": "이미지 캐시를 삭제했습니다.",
@@ -73,6 +75,7 @@
     "update_check_failed": "업데이트 확인에 실패했습니다",
     "update_now": "지금 업데이트",
     "version": "버전",
+    "video_playback": "동영상 재생",
     "website": "웹사이트",
     "wifi_only": "Wi-Fi 전용 다운로드"
   },

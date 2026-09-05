@@ -20,6 +20,8 @@
     "app_lock": "Bloqueio do app",
     "app_name": "Nome do app",
     "auto_lock_after": "Bloqueio automático após",
+    "autoplay": "Reprodução automática",
+    "autoplay_desc": "Reproduzir automaticamente ao abrir um vídeo",
     "bottom_tabs": "Abas inferiores",
     "bottom_tabs_desc": "Início e Configurações estão sempre visíveis.",
     "cache_cleared": "Cache de imagens limpa.",
@@ -73,6 +75,7 @@
     "update_check_failed": "Falha ao verificar atualizações",
     "update_now": "Atualizar agora",
     "version": "Versão",
+    "video_playback": "Reprodução de vídeo",
     "website": "Site",
     "wifi_only": "Downloads somente no Wi-Fi"
   },

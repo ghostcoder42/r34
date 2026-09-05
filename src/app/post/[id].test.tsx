@@ -63,6 +63,10 @@ jest.mock('@/api/video-queries', () => ({
   }),
 }));
 
+jest.mock('@/lib/hooks/use-video-autoplay', () => ({
+  useVideoAutoplay: () => ({ autoplayEnabled: false, setAutoplayEnabled: jest.fn() }),
+}));
+
 jest.mock('@/lib/hooks', () => ({
   useVideoDownload: jest.fn().mockReturnValue({
     isDownloading: false,

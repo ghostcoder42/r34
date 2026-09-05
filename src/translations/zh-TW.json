@@ -20,6 +20,8 @@
     "app_lock": "應用鎖",
     "app_name": "應用名稱",
     "auto_lock_after": "自動鎖定於",
+    "autoplay": "自動播放",
+    "autoplay_desc": "開啟影片頁時自動開始播放",
     "bottom_tabs": "底部標籤",
     "bottom_tabs_desc": "首頁和設定始終顯示。",
     "cache_cleared": "圖片快取已清除。",
@@ -73,6 +75,7 @@
     "update_check_failed": "檢查更新失敗",
     "update_now": "立即更新",
     "version": "版本",
+    "video_playback": "影片播放",
     "website": "網站",
     "wifi_only": "僅 Wi-Fi 下載"
   },
