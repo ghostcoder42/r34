@@ -2,6 +2,7 @@
   "common": {
     "cancel": "取消",
     "clear": "清除",
+    "delete": "刪除",
     "done": "完成",
     "error": "錯誤"
   },
@@ -89,11 +90,23 @@
     "searching": "搜尋中..."
   },
   "library": {
+    "by_uploader": "上傳者：{{uploader}}",
+    "delete_msg": "從下載中移除「{{title}}」？",
+    "delete_title": "刪除下載",
+    "downloads": "下載",
+    "no_downloads": "暫無下載",
+    "retry": "重試",
+    "status_cancelled": "已取消",
+    "status_downloading": "下載中 · {{progress}}%",
+    "status_downloading_indeterminate": "下載中…",
+    "status_failed": "失敗{{error}}",
+    "tap_retry_hint": " — 點擊重試再試一次",
     "title": "媒體庫"
   },
   "favorites": {
-    "title": "收藏",
-    "empty": "尚無收藏"
+    "empty": "尚無收藏",
+    "empty_hint": "點擊影片上的愛心即可收藏到這裡。",
+    "title": "收藏"
   },
   "history": {
     "title": "歷史",

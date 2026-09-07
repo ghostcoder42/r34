@@ -2,6 +2,7 @@
   "common": {
     "cancel": "キャンセル",
     "clear": "クリア",
+    "delete": "削除",
     "done": "完了",
     "error": "エラー"
   },
@@ -89,11 +90,23 @@
     "searching": "検索中..."
   },
   "library": {
+    "by_uploader": "アップローダー：{{uploader}}",
+    "delete_msg": "「{{title}}」をダウンロードから削除しますか？",
+    "delete_title": "ダウンロードを削除",
+    "downloads": "ダウンロード",
+    "no_downloads": "ダウンロードはまだありません",
+    "retry": "再試行",
+    "status_cancelled": "キャンセル済み",
+    "status_downloading": "ダウンロード中 · {{progress}}%",
+    "status_downloading_indeterminate": "ダウンロード中…",
+    "status_failed": "失敗{{error}}",
+    "tap_retry_hint": " — 「再試行」をタップしてもう一度",
     "title": "ライブラリ"
   },
   "favorites": {
-    "title": "お気に入り",
-    "empty": "お気に入りはまだありません"
+    "empty": "お気に入りはまだありません",
+    "empty_hint": "動画のハートをタップするとここに保存されます。",
+    "title": "お気に入り"
   },
   "history": {
     "title": "履歴",
