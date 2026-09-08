@@ -2,6 +2,7 @@
   "common": {
     "cancel": "取消",
     "clear": "清除",
+    "delete": "删除",
     "done": "完成",
     "error": "错误"
   },
@@ -89,11 +90,23 @@
     "searching": "搜索中..."
   },
   "library": {
+    "by_uploader": "上传者：{{uploader}}",
+    "delete_msg": "从下载中移除“{{title}}”？",
+    "delete_title": "删除下载",
+    "downloads": "下载",
+    "no_downloads": "暂无下载",
+    "retry": "重试",
+    "status_cancelled": "已取消",
+    "status_downloading": "下载中 · {{progress}}%",
+    "status_downloading_indeterminate": "下载中…",
+    "status_failed": "失败{{error}}",
+    "tap_retry_hint": " — 点击重试再试一次",
     "title": "媒体库"
   },
   "favorites": {
-    "title": "收藏",
-    "empty": "暂无收藏"
+    "empty": "暂无收藏",
+    "empty_hint": "点击视频上的爱心即可收藏到这里。",
+    "title": "收藏"
   },
   "history": {
     "title": "历史",

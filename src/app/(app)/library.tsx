@@ -11,6 +11,7 @@ import { VideoTile } from '@/components/video-tile';
 import type { DownloadMetadata } from '@/lib/download';
 import { cancelDownload, retryDownload } from '@/lib/download/download-video';
 import { useColumns } from '@/lib/hooks/use-columns';
+import { useTranslate } from '@/lib/i18n';
 import { type ActiveDownload, useActiveDownloadsStore } from '@/lib/stores/active-downloads-store';
 import { baseIdOf, useDownloadedStore } from '@/lib/stores/downloaded-store';
 import type { FavoriteItem } from '@/lib/stores/favorites-store';
@@ -18,6 +19,7 @@ import { useFavoritesStore } from '@/lib/stores/favorites-store';
 import { useHistoryStore } from '@/lib/stores/history-store';
 
 function HistoryTab(): React.ReactElement {
+  const t = useTranslate();
   const { history, clearHistory } = useHistoryStore();
   const numColumns = useColumns();
   const [refreshing, setRefreshing] = React.useState(false);
@@ -25,7 +27,7 @@ function HistoryTab(): React.ReactElement {
   if (history.length === 0) {
     return (
       <View className="flex-1 items-center justify-center py-20">
-        <Text className="text-neutral-500 dark:text-neutral-400">No watch history</Text>
+        <Text className="text-neutral-500 dark:text-neutral-400">{t('history.empty')}</Text>
       </View>
     );
   }
@@ -34,7 +36,7 @@ function HistoryTab(): React.ReactElement {
     <>
       <View className="flex-row justify-end px-4 py-2">
         <TouchableOpacity onPress={clearHistory}>
-          <Text className="text-primary-500 text-xs">Clear All</Text>
+          <Text className="text-primary-500 text-xs">{t('history.clear_all')}</Text>
         </TouchableOpacity>
       </View>
       <FlashList
@@ -71,15 +73,16 @@ function DownloadRow({
   item: DownloadMetadata;
   onRemove: (videoId: string) => void;
 }): React.ReactElement {
+  const t = useTranslate();
   const baseId = baseIdOf(item.videoId);
   const isFav = useFavoritesStore((s) => s.favorites.some((f) => f.id === baseId));
   const swipeableRef = React.useRef<Swipeable>(null);
 
   const confirmRemove = () => {
     swipeableRef.current?.close();
-    Alert.alert('Delete Download', `Remove "${item.title}" from downloads?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => onRemove(item.videoId) },
+    Alert.alert(t('library.delete_title'), t('library.delete_msg', { title: item.title }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: () => onRemove(item.videoId) },
     ]);
   };
 
@@ -120,7 +123,7 @@ function DownloadRow({
             </Text>
             {item.uploader ? (
               <Text className="text-neutral-500 dark:text-neutral-400 text-xs">
-                By {item.uploader}
+                {t('library.by_uploader', { uploader: item.uploader })}
               </Text>
             ) : null}
             <Text className="text-neutral-500 dark:text-neutral-400 text-xs">
@@ -134,6 +137,7 @@ function DownloadRow({
 }
 
 function ActiveDownloadRow({ task }: { task: ActiveDownload }): React.ReactElement {
+  const t = useTranslate();
   const [cancelling, setCancelling] = React.useState(false);
   const [retrying, setRetrying] = React.useState(false);
   const indeterminate = task.progress < 0;
@@ -173,12 +177,12 @@ function ActiveDownloadRow({ task }: { task: ActiveDownload }): React.ReactEleme
         </Text>
         <Text className="text-neutral-500 dark:text-neutral-400 text-xs">
           {task.status === 'error'
-            ? `Failed${task.error ? `: ${task.error}` : ''} — tap Retry to try again`
+            ? `${t('library.status_failed', { error: task.error ? `: ${task.error}` : '' })}${t('library.tap_retry_hint')}`
             : task.status === 'cancelled'
-              ? 'Cancelled'
+              ? t('library.status_cancelled')
               : indeterminate
-                ? 'Downloading…'
-                : `Downloading · ${pct}%`}
+                ? t('library.status_downloading_indeterminate')
+                : t('library.status_downloading', { progress: pct })}
         </Text>
         <View className="mt-1 h-1.5 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
           <View
@@ -194,7 +198,9 @@ function ActiveDownloadRow({ task }: { task: ActiveDownload }): React.ReactEleme
             className="items-center justify-center rounded-full bg-primary-500 px-3 py-1.5"
             testID="active-download-retry"
           >
-            <Text className="text-xs font-medium text-white">{retrying ? '…' : 'Retry'}</Text>
+            <Text className="text-xs font-medium text-white">
+              {retrying ? '…' : t('library.retry')}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={onCancel}
@@ -203,7 +209,7 @@ function ActiveDownloadRow({ task }: { task: ActiveDownload }): React.ReactEleme
             testID="active-download-cancel"
           >
             <Text className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
-              {cancelling ? '…' : 'Cancel'}
+              {cancelling ? '…' : t('common.cancel')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -215,7 +221,7 @@ function ActiveDownloadRow({ task }: { task: ActiveDownload }): React.ReactEleme
           testID="active-download-cancel"
         >
           <Text className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
-            {cancelling ? '…' : 'Cancel'}
+            {cancelling ? '…' : t('common.cancel')}
           </Text>
         </TouchableOpacity>
       )}
@@ -228,6 +234,7 @@ type DownloadListItem =
   | { kind: 'done'; entry: DownloadMetadata };
 
 function DownloadsTab(): React.ReactElement {
+  const t = useTranslate();
   const entries = useDownloadedStore((s) => s.entries);
   const loaded = useDownloadedStore((s) => s.loaded);
   const hydrate = useDownloadedStore((s) => s.hydrate);
@@ -265,7 +272,7 @@ function DownloadsTab(): React.ReactElement {
   if (loaded && data.length === 0) {
     return (
       <View className="flex-1 items-center justify-center py-20">
-        <Text className="text-neutral-500 dark:text-neutral-400">No downloads yet</Text>
+        <Text className="text-neutral-500 dark:text-neutral-400">{t('library.no_downloads')}</Text>
       </View>
     );
   }
@@ -290,6 +297,7 @@ function DownloadsTab(): React.ReactElement {
 }
 
 function FavoritesTab(): React.ReactElement {
+  const t = useTranslate();
   const { favorites, removeFavorite } = useFavoritesStore();
   const numColumns = useColumns();
   const [refreshing, setRefreshing] = React.useState(false);
@@ -297,9 +305,9 @@ function FavoritesTab(): React.ReactElement {
   if (favorites.length === 0) {
     return (
       <View className="flex-1 items-center justify-center py-20">
-        <Text className="text-neutral-500 dark:text-neutral-400">No favorites yet</Text>
+        <Text className="text-neutral-500 dark:text-neutral-400">{t('favorites.empty')}</Text>
         <Text className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
-          Tap the heart on a video to save it here.
+          {t('favorites.empty_hint')}
         </Text>
       </View>
     );
@@ -331,13 +339,19 @@ function FavoritesTab(): React.ReactElement {
 }
 
 type Tab = 'history' | 'downloads' | 'favorites';
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'history', label: '🕐 History' },
-  { key: 'downloads', label: '⬇️ Downloads' },
-  { key: 'favorites', label: '❤️ Favorites' },
+// Emojis stay in code (language-neutral); labels come from the translations.
+const TABS: {
+  key: Tab;
+  emoji: string;
+  tx: 'history.title' | 'library.downloads' | 'favorites.title';
+}[] = [
+  { key: 'history', emoji: '🕐', tx: 'history.title' },
+  { key: 'downloads', emoji: '⬇️', tx: 'library.downloads' },
+  { key: 'favorites', emoji: '❤️', tx: 'favorites.title' },
 ];
 
 export default function Library(): React.ReactElement {
+  const t = useTranslate();
   const [activeTab, setActiveTab] = React.useState<Tab>('history');
   const pagerRef = React.useRef<ScrollView>(null);
   const { width } = useWindowDimensions();
@@ -388,7 +402,7 @@ export default function Library(): React.ReactElement {
             <Text
               className={`text-sm font-medium ${activeTab === tab.key ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-500 dark:text-neutral-400'}`}
             >
-              {tab.label}
+              {`${tab.emoji} ${t(tab.tx)}`}
             </Text>
           </TouchableOpacity>
         ))}

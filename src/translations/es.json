@@ -2,6 +2,7 @@
   "common": {
     "cancel": "Cancelar",
     "clear": "Borrar",
+    "delete": "Eliminar",
     "done": "Listo",
     "error": "Error"
   },
@@ -89,11 +90,23 @@
     "searching": "Buscando..."
   },
   "library": {
+    "by_uploader": "De {{uploader}}",
+    "delete_msg": "¿Eliminar \"{{title}}\" de las descargas?",
+    "delete_title": "Eliminar descarga",
+    "downloads": "Descargas",
+    "no_downloads": "Aún no hay descargas",
+    "retry": "Reintentar",
+    "status_cancelled": "Cancelada",
+    "status_downloading": "Descargando · {{progress}}%",
+    "status_downloading_indeterminate": "Descargando…",
+    "status_failed": "Error{{error}}",
+    "tap_retry_hint": " — toca Reintentar para volver a intentarlo",
     "title": "Biblioteca"
   },
   "favorites": {
-    "title": "Favoritos",
-    "empty": "Aún no hay favoritos"
+    "empty": "Aún no hay favoritos",
+    "empty_hint": "Toca el corazón de un vídeo para guardarlo aquí.",
+    "title": "Favoritos"
   },
   "history": {
     "title": "Historial",
