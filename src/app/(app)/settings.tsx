@@ -9,7 +9,7 @@ import { AppIconItem } from '@/components/settings/app-icon-item';
 import { ItemsContainer } from '@/components/settings/items-container';
 import { LanguageItem } from '@/components/settings/language-item';
 import { ThemeItem } from '@/components/settings/theme-item';
-import { FocusAwareStatusBar, SafeAreaView, ScrollView, Text, View, colors } from '@/components/ui';
+import { FocusAwareStatusBar, ScrollView, Text, View, colors } from '@/components/ui';
 import { Trash } from '@/components/ui/icons';
 import { UpdateDialog } from '@/components/update-dialog';
 import { LOCK_TIMEOUT_OPTIONS, useSecuritySettings } from '@/lib/hooks/use-security-settings';
@@ -141,7 +141,7 @@ export default function Settings() {
   return (
     <>
       <FocusAwareStatusBar />
-      <SafeAreaView className="flex-1 bg-white dark:bg-neutral-900">
+      <View className="flex-1 bg-white dark:bg-neutral-900">
         <ScrollView className="flex-1">
           <View className="flex-1 px-4 py-4">
             {/* Preferences */}
@@ -367,7 +367,7 @@ export default function Settings() {
             <View className="h-8" />
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
 
       <UpdateDialog
         release={pendingRelease}

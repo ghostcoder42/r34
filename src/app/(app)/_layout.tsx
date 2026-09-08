@@ -4,7 +4,7 @@ import { Tabs } from 'expo-router/js-tabs';
 import { useColorScheme } from 'nativewind';
 import * as React from 'react';
 
-import { colors } from '@/components/ui';
+import { SafeAreaView, colors } from '@/components/ui';
 import {
   Users as FollowingIcon,
   Home as HomeIcon,
@@ -38,64 +38,74 @@ export default function TabLayout(): React.ReactElement {
     return () => clearTimeout(timer);
   }, []);
 
+  // Single owner of the tab area's system-chrome insets: this wrapper consumes
+  // all four edges, the tab bar gets an explicit zero bottom inset below, and
+  // the tab screens are plain views. Any change here (e.g. a floating tab bar
+  // over scrolling content) only edits this file — and a regression shows up
+  // as obvious layout breakage, not a silent shift inside library defaults.
+  const shellBg = isDark ? 'bg-neutral-900' : 'bg-white';
+
   return (
-    <Tabs
-      screenOptions={{
-        // No per-screen header — each tab manages its own top safe area, and
-        // the bottom tab bar is enough navigation.
-        headerShown: false,
-        tabBarActiveTintColor: colors.primary[500],
-        tabBarInactiveTintColor: isDark ? colors.neutral[400] : colors.neutral[500],
-        tabBarStyle: {
-          backgroundColor: isDark ? colors.neutral[900] : colors.white,
-          borderTopColor: isDark ? colors.neutral[800] : colors.neutral[200],
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: t('tabs.home'),
-          tabBarIcon: ({ color }) => <HomeIcon color={color} />,
-          tabBarButtonTestID: 'home-tab',
+    <SafeAreaView className={`flex-1 ${shellBg}`}>
+      <Tabs
+        safeAreaInsets={{ bottom: 0 }}
+        screenOptions={{
+          // No per-screen header — each tab manages its own top safe area, and
+          // the bottom tab bar is enough navigation.
+          headerShown: false,
+          tabBarActiveTintColor: colors.primary[500],
+          tabBarInactiveTintColor: isDark ? colors.neutral[400] : colors.neutral[500],
+          tabBarStyle: {
+            backgroundColor: isDark ? colors.neutral[900] : colors.white,
+            borderTopColor: isDark ? colors.neutral[800] : colors.neutral[200],
+          },
         }}
-      />
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: t('tabs.search'),
-          tabBarIcon: ({ color }) => <SearchIcon color={color} />,
-          tabBarButtonTestID: 'search-tab',
-          // Hide from the tab bar if the user disabled it in Settings.
-          href: tabs.search ? undefined : null,
-        }}
-      />
-      <Tabs.Screen
-        name="following"
-        options={{
-          title: t('tabs.following'),
-          tabBarIcon: ({ color }) => <FollowingIcon color={color} />,
-          tabBarButtonTestID: 'following-tab',
-          href: tabs.following ? undefined : null,
-        }}
-      />
-      <Tabs.Screen
-        name="library"
-        options={{
-          title: t('tabs.library'),
-          tabBarIcon: ({ color }) => <LibraryIcon color={color} />,
-          tabBarButtonTestID: 'library-tab',
-          href: tabs.library ? undefined : null,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: t('tabs.settings'),
-          tabBarIcon: ({ color }) => <SettingsIcon color={color} />,
-          tabBarButtonTestID: 'settings-tab',
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: t('tabs.home'),
+            tabBarIcon: ({ color }) => <HomeIcon color={color} />,
+            tabBarButtonTestID: 'home-tab',
+          }}
+        />
+        <Tabs.Screen
+          name="search"
+          options={{
+            title: t('tabs.search'),
+            tabBarIcon: ({ color }) => <SearchIcon color={color} />,
+            tabBarButtonTestID: 'search-tab',
+            // Hide from the tab bar if the user disabled it in Settings.
+            href: tabs.search ? undefined : null,
+          }}
+        />
+        <Tabs.Screen
+          name="following"
+          options={{
+            title: t('tabs.following'),
+            tabBarIcon: ({ color }) => <FollowingIcon color={color} />,
+            tabBarButtonTestID: 'following-tab',
+            href: tabs.following ? undefined : null,
+          }}
+        />
+        <Tabs.Screen
+          name="library"
+          options={{
+            title: t('tabs.library'),
+            tabBarIcon: ({ color }) => <LibraryIcon color={color} />,
+            tabBarButtonTestID: 'library-tab',
+            href: tabs.library ? undefined : null,
+          }}
+        />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            title: t('tabs.settings'),
+            tabBarIcon: ({ color }) => <SettingsIcon color={color} />,
+            tabBarButtonTestID: 'settings-tab',
+          }}
+        />
+      </Tabs>
+    </SafeAreaView>
   );
 }

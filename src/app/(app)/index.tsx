@@ -4,7 +4,7 @@ import * as React from 'react';
 import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 
 import { useVideos } from '@/api/video-queries';
-import { SafeAreaView, Text } from '@/components/ui';
+import { Text } from '@/components/ui';
 import { VideoTile } from '@/components/video-tile';
 import { flattenUniquePages } from '@/lib/flatten-pages';
 import { useColumns } from '@/lib/hooks/use-columns';
@@ -46,7 +46,7 @@ export default function Home(): React.ReactElement {
 
   if (isError && videos.length === 0) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-white dark:bg-neutral-900">
+      <View className="flex-1 items-center justify-center bg-white dark:bg-neutral-900">
         <Text className="text-lg text-neutral-900 dark:text-neutral-100">Error loading videos</Text>
         <TouchableOpacity
           onPress={() => refetch()}
@@ -54,12 +54,12 @@ export default function Home(): React.ReactElement {
         >
           <Text className="font-semibold text-white">Retry</Text>
         </TouchableOpacity>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-neutral-900">
+    <View className="flex-1 bg-white dark:bg-neutral-900">
       <FlashList
         key={numColumns}
         data={videos}
@@ -86,6 +86,6 @@ export default function Home(): React.ReactElement {
         refreshing={isRefetching}
         onRefresh={refetch}
       />
-    </SafeAreaView>
+    </View>
   );
 }

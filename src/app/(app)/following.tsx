@@ -3,14 +3,18 @@ import { Link } from 'expo-router';
 import type * as React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 
-import { FocusAwareStatusBar, SafeAreaView } from '@/components/ui';
+import { FocusAwareStatusBar } from '@/components/ui';
 import { useFollowingStore } from '@/lib/stores/following-store';
 
 export default function FollowingScreen(): React.ReactElement {
   const { following, unfollow } = useFollowingStore();
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-neutral-900">
+    <View
+      // The tab bar below already sits above the system navigation bar; also
+      // applying the bottom safe-area edge here double-pads the content.
+      className="flex-1 bg-white dark:bg-neutral-900"
+    >
       <FocusAwareStatusBar />
       {following.length === 0 ? (
         <View className="flex-1 items-center justify-center py-20">
@@ -48,6 +52,6 @@ export default function FollowingScreen(): React.ReactElement {
           keyExtractor={(item) => item.slug}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
