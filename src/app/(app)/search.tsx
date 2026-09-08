@@ -4,7 +4,7 @@ import * as React from 'react';
 import { ActivityIndicator, ScrollView, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { useSearch } from '@/api/search';
-import { FocusAwareStatusBar, SafeAreaView, Text } from '@/components/ui';
+import { FocusAwareStatusBar, Text } from '@/components/ui';
 import { VideoTile } from '@/components/video-tile';
 import { useTranslate } from '@/lib';
 import { flattenUniquePages } from '@/lib/flatten-pages';
@@ -95,7 +95,11 @@ export default function SearchScreen() {
   const showResults = submittedQuery.length > 0;
 
   return (
-    <SafeAreaView className="bg-white dark:bg-neutral-900 flex-1">
+    <View
+      // The tab bar below already sits above the system navigation bar; also
+      // applying the bottom safe-area edge here double-pads the content.
+      className="bg-white dark:bg-neutral-900 flex-1"
+    >
       <FocusAwareStatusBar />
       <View className="border-neutral-200 dark:border-neutral-800 px-4 py-3">
         <TextInput
@@ -195,6 +199,6 @@ export default function SearchScreen() {
           </View>
         </ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   );
 }

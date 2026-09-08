@@ -5,7 +5,7 @@ import * as React from 'react';
 import { Alert, ScrollView, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 
-import { FocusAwareStatusBar, SafeAreaView } from '@/components/ui';
+import { FocusAwareStatusBar } from '@/components/ui';
 import { Trash } from '@/components/ui/icons';
 import { VideoTile } from '@/components/video-tile';
 import type { DownloadMetadata } from '@/lib/download';
@@ -372,7 +372,11 @@ export default function Library(): React.ReactElement {
   };
 
   return (
-    <SafeAreaView className="bg-white dark:bg-neutral-900 flex-1">
+    <View
+      // The tab bar below already sits above the system navigation bar; also
+      // applying the bottom safe-area edge here double-pads the content.
+      className="bg-white dark:bg-neutral-900 flex-1"
+    >
       <FocusAwareStatusBar />
       <View className="border-neutral-200 dark:border-neutral-800 flex-row border-b">
         {TABS.map((tab, index) => (
@@ -404,6 +408,6 @@ export default function Library(): React.ReactElement {
           </View>
         ))}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
