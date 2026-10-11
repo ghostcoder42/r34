@@ -9,7 +9,7 @@ import { FocusAwareStatusBar } from '@/components/ui';
 import { Trash } from '@/components/ui/icons';
 import { VideoTile } from '@/components/video-tile';
 import type { DownloadMetadata } from '@/lib/download';
-import { cancelDownload, retryDownload } from '@/lib/download/download-video';
+import { cancelDownload, pauseDownload, retryDownload } from '@/lib/download/download-video';
 import { useColumns } from '@/lib/hooks/use-columns';
 import { useTranslate } from '@/lib/i18n';
 import { type ActiveDownload, useActiveDownloadsStore } from '@/lib/stores/active-downloads-store';
@@ -138,25 +138,35 @@ function DownloadRow({
 
 function ActiveDownloadRow({ task }: { task: ActiveDownload }): React.ReactElement {
   const t = useTranslate();
-  const [cancelling, setCancelling] = React.useState(false);
-  const [retrying, setRetrying] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
   const indeterminate = task.progress < 0;
   const pct = indeterminate ? 0 : Math.round(task.progress * 100);
   const barWidth = indeterminate ? 40 : pct;
   const isFailed = task.status === 'error';
-  // A retry is only meaningful while the task is still in its error state —
-  // once retryDownload flips it to preparing/downloading the button goes away.
-  const canRetry = isFailed && !retrying && Boolean(task.videoUrl || task.slug);
+  const isPaused = task.status === 'paused';
+  // A retry is only meaningful while the task is still error/paused — once
+  // retryDownload flips it to preparing/downloading the button goes away.
+  const canRetry = (isFailed || isPaused) && !busy && Boolean(task.videoUrl || task.slug);
 
   const onCancel = async () => {
-    setCancelling(true);
+    setBusy(true);
+    // Cancelling a failed/paused task removes it together with its partial
+    // file (there is no transfer left to abort).
     await cancelDownload(task.baseId);
   };
 
   const onRetry = async () => {
-    setRetrying(true);
-    await retryDownload(task.baseId);
-    setRetrying(false);
+    setBusy(true);
+    // false = still offline / source gone; the task stays errored so the
+    // user can delete it instead.
+    const restarted = await retryDownload(task.baseId);
+    if (!restarted) setBusy(false);
+  };
+
+  const onPause = async () => {
+    setBusy(true);
+    await pauseDownload(task.baseId);
+    setBusy(false);
   };
 
   return (
@@ -176,17 +186,25 @@ function ActiveDownloadRow({ task }: { task: ActiveDownload }): React.ReactEleme
           {task.title}
         </Text>
         <Text className="text-neutral-500 dark:text-neutral-400 text-xs">
-          {task.status === 'error'
+          {isFailed
             ? `${t('library.status_failed', { error: task.error ? `: ${task.error}` : '' })}${t('library.tap_retry_hint')}`
-            : task.status === 'cancelled'
-              ? t('library.status_cancelled')
-              : indeterminate
-                ? t('library.status_downloading_indeterminate')
-                : t('library.status_downloading', { progress: pct })}
+            : isPaused
+              ? t('library.status_paused')
+              : task.status === 'cancelled'
+                ? t('library.status_cancelled')
+                : indeterminate
+                  ? t('library.status_downloading_indeterminate')
+                  : t('library.status_downloading', { progress: pct })}
         </Text>
         <View className="mt-1 h-1.5 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
           <View
-            className={isFailed ? 'h-full bg-red-500' : 'h-full bg-sky-500'}
+            className={
+              isFailed
+                ? 'h-full bg-red-500'
+                : isPaused
+                  ? 'h-full bg-neutral-400 dark:bg-neutral-500'
+                  : 'h-full bg-sky-500'
+            }
             style={{ width: `${barWidth}%` }}
           />
         </View>
@@ -198,32 +216,42 @@ function ActiveDownloadRow({ task }: { task: ActiveDownload }): React.ReactEleme
             className="items-center justify-center rounded-full bg-primary-500 px-3 py-1.5"
             testID="active-download-retry"
           >
-            <Text className="text-xs font-medium text-white">
-              {retrying ? '…' : t('library.retry')}
-            </Text>
+            <Text className="text-xs font-medium text-white">{t('common.resume')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={onCancel}
-            disabled={cancelling}
+            disabled={busy}
             className="items-center justify-center rounded-full bg-neutral-200 px-3 py-1.5 dark:bg-neutral-700"
-            testID="active-download-cancel"
+            testID="active-download-delete"
           >
             <Text className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
-              {cancelling ? '…' : t('common.cancel')}
+              {t('common.delete')}
             </Text>
           </TouchableOpacity>
         </View>
       ) : (
-        <TouchableOpacity
-          onPress={onCancel}
-          disabled={cancelling || task.status === 'cancelled'}
-          className="ml-2 items-center justify-center rounded-full bg-neutral-200 px-3 py-1.5 dark:bg-neutral-700"
-          testID="active-download-cancel"
-        >
-          <Text className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
-            {cancelling ? '…' : t('common.cancel')}
-          </Text>
-        </TouchableOpacity>
+        <View className="ml-2 flex-row items-center gap-2">
+          <TouchableOpacity
+            onPress={onPause}
+            disabled={busy || task.status !== 'downloading'}
+            className="items-center justify-center rounded-full bg-neutral-200 px-3 py-1.5 dark:bg-neutral-700"
+            testID="active-download-pause"
+          >
+            <Text className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
+              {t('common.pause')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={onCancel}
+            disabled={busy || task.status === 'cancelled'}
+            className="items-center justify-center rounded-full bg-neutral-200 px-3 py-1.5 dark:bg-neutral-700"
+            testID="active-download-cancel"
+          >
+            <Text className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
+              {busy ? '…' : t('common.cancel')}
+            </Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );

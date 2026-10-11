@@ -7,6 +7,7 @@ import {
   reconcileDownloads,
 } from '@/lib/download';
 import type { DownloadMetadata } from '@/lib/download';
+import { restoreUnfinishedDownloads, useActiveDownloadsStore } from './active-downloads-store';
 
 /**
  * Composite download keys are `${baseId}_${quality}` (e.g. `12345_720p`), built
@@ -36,9 +37,16 @@ export const useDownloadedStore = create<DownloadedState>((set) => ({
   loaded: false,
 
   hydrate: async () => {
-    // Clean orphaned files (no metadata) before reading, so the list reflects
-    // the true on-disk state.
-    await reconcileDownloads();
+    // Tasks persisted as in-flight died with the previous process — mark them
+    // retryable first, so the orphan cleanup below spares their partial files
+    // (those are the resume points).
+    restoreUnfinishedDownloads();
+    const activeFiles = new Set(
+      Object.values(useActiveDownloadsStore.getState().tasks)
+        .filter((task) => task.videoId)
+        .map((task) => `${task.videoId}.mp4`)
+    );
+    await reconcileDownloads('videos', activeFiles);
     const all = await getAllDownloads();
     set({
       entries: all,

@@ -81,8 +81,10 @@ export function useVideoActions(item: ActionableItem) {
       showMessage({ message: 'Downloaded', type: 'success', position: 'top' });
     } catch (error) {
       const task = useActiveDownloadsStore.getState().tasks[item.id];
-      // Cancelled (task removed or marked) -> stay silent.
-      if (!task || task.status === 'cancelled') return;
+      // Cancelled or paused (by the user) -> user action, not a failure.
+      // On some Android versions pauseAsync settles downloadAsync without a
+      // result; that rejection must not relabel the paused task as errored.
+      if (!task || task.status === 'cancelled' || task.status === 'paused') return;
       const msg = error instanceof Error ? error.message : 'Download failed';
       // Failure before downloadVideo ran (e.g. detail fetch) -> mark it failed here.
       if (task.status !== 'error') {

@@ -5,6 +5,8 @@
     "delete": "Eliminar",
     "done": "Listo",
     "error": "Error",
+    "pause": "Pausar",
+    "resume": "Reanudar",
     "retry": "Reintentar"
   },
   "tabs": {
@@ -102,6 +104,7 @@
     "status_downloading": "Descargando · {{progress}}%",
     "status_downloading_indeterminate": "Descargando…",
     "status_failed": "Error{{error}}",
+    "status_paused": "En pausa",
     "tap_retry_hint": " — toca Reintentar para volver a intentarlo",
     "title": "Biblioteca"
   },

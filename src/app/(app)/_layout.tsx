@@ -13,7 +13,6 @@ import {
   Settings as SettingsIcon,
 } from '@/components/ui/icons';
 import { useTranslate } from '@/lib/i18n';
-import { restoreUnfinishedDownloads } from '@/lib/stores/active-downloads-store';
 import { useDownloadedStore } from '@/lib/stores/downloaded-store';
 import { useTabConfigStore } from '@/lib/stores/tab-config-store';
 
@@ -25,10 +24,10 @@ export default function TabLayout(): React.ReactElement {
   const hydrateDownloads = useDownloadedStore((s) => s.hydrate);
 
   React.useEffect(() => {
+    // Hydrates the downloaded list AND restores unfinished download tasks
+    // (interrupted ones become retryable; their partial files are spared by
+    // the orphan cleanup inside).
     hydrateDownloads();
-    // Bring back downloads that failed or were interrupted by an app restart,
-    // so they can be retried from the Downloads tab instead of being lost.
-    restoreUnfinishedDownloads();
   }, [hydrateDownloads]);
 
   React.useEffect(() => {
