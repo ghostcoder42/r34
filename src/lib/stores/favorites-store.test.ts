@@ -6,6 +6,9 @@ jest.mock('@/lib/storage', () => {
     setItem: (key: string, value: unknown) => {
       store[key] = JSON.stringify(value);
     },
+    // Raw-storage stub for the i18n bootstrap (pulled in transitively via
+    // scraper → fetch-error); no stored language means English.
+    storage: { getString: jest.fn(() => undefined), set: jest.fn() },
     __store: store,
   };
 });

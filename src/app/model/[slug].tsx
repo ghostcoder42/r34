@@ -9,6 +9,7 @@ import { VideoTile } from '@/components/video-tile';
 import { flattenUniquePages } from '@/lib/flatten-pages';
 import { useColumns } from '@/lib/hooks/use-columns';
 import { useFetchErrorToast } from '@/lib/hooks/use-fetch-error-toast';
+import { fetchErrorMessage } from '@/lib/r34/fetch-error';
 import type { VideoListItem } from '@/lib/r34/types';
 
 export default function ModelPage(): React.ReactElement {
@@ -60,7 +61,9 @@ export default function ModelPage(): React.ReactElement {
       <SafeAreaView className="flex-1 items-center justify-center bg-white dark:bg-neutral-900">
         <Stack.Screen options={{ title: 'Error' }} />
         <FocusAwareStatusBar />
-        <Text className="text-lg text-neutral-900 dark:text-white">Error loading videos</Text>
+        <Text className="px-6 text-center text-lg text-neutral-900 dark:text-white">
+          {fetchErrorMessage(error)}
+        </Text>
         <TouchableOpacity
           onPress={() => refetch()}
           className="mt-4 rounded-lg bg-primary-500 px-4 py-2"

@@ -112,11 +112,18 @@ describe('Home screen — fetch error resilience', () => {
   it('shows the full error screen (no toast) when the feed never loaded', () => {
     mockQueryState.data = undefined;
     mockQueryState.isError = true;
-    mockQueryState.error = new Error('Failed to fetch: 502');
+    const error = new Error(
+      'Failed to fetch https://rule34video.com/latest-updates/1/: 502'
+    ) as Error & { status?: number };
+    error.status = 502;
+    mockQueryState.error = error;
 
     render(<Home />);
 
-    expect(screen.getByText('Error loading videos')).toBeTruthy();
+    // The full error state carries the classified, localized message instead
+    // of a generic one (en locale in tests).
+    expect(screen.getByText(/The site is having trouble/)).toBeTruthy();
+    expect(screen.getByText(/502/)).toBeTruthy();
     expect(screen.queryByText('Loaded Video')).toBeNull();
     expect(showMessage).not.toHaveBeenCalled();
   });

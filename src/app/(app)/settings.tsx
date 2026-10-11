@@ -1,6 +1,7 @@
 import { Env } from '@env';
 import { Image } from 'expo-image';
 import * as LocalAuthentication from 'expo-local-authentication';
+import { useRouter } from 'expo-router';
 import type * as React from 'react';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, TouchableOpacity } from 'react-native';
@@ -73,6 +74,7 @@ function Row({
 
 export default function Settings() {
   const t = useTranslate();
+  const router = useRouter();
   const { colorScheme } = useColorScheme();
   const iconColor = colorScheme === 'dark' ? colors.neutral[400] : colors.neutral[500];
   const { tabs, setTab } = useTabConfigStore();
@@ -348,6 +350,7 @@ export default function Settings() {
                 icon={<Trash color={iconColor} />}
                 onPress={handleClearDownloads}
               />
+              <Row label={t('settings.error_log')} onPress={() => router.push('/logs')} />
             </ItemsContainer>
 
             {/* About */}

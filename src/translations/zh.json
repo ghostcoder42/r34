@@ -4,7 +4,8 @@
     "clear": "清除",
     "delete": "删除",
     "done": "完成",
-    "error": "错误"
+    "error": "错误",
+    "retry": "重试"
   },
   "tabs": {
     "home": "首页",
@@ -34,6 +35,7 @@
     "clear_downloads_msg": "删除所有已下载的视频?此操作无法撤销。",
     "clear_downloads_title": "清除下载",
     "data_storage": "数据与存储",
+    "error_log": "错误日志",
     "general": "通用",
     "github": "Github",
     "hide_preview": "隐藏预览",
@@ -121,7 +123,9 @@
   },
   "post": {
     "video_removed": "当前视频已被网站删除",
-    "site_unreachable": "无法访问网站，请检查网络"
+    "site_unreachable": "无法访问网站，请检查网络",
+    "load_failed_title": "出现问题",
+    "load_error": "无法加载此视频，请稍后重试。"
   },
   "net": {
     "offline": "网络连接不可用，请检查网络",
@@ -129,7 +133,17 @@
     "rate_limited": "请求过于频繁，请稍后再试",
     "server": "网站服务暂时不可用（{{status}}），请稍后重试",
     "not_found": "内容不存在或已被移除",
-    "http_error": "请求失败（{{status}}），请稍后重试"
+    "http_error": "请求失败（{{status}}），请稍后重试",
+    "blocked": "访问被拒绝（{{status}}）——站点拒绝了本次访问，请稍后重试",
+    "unreachable": "网络正常，但无法连接到站点——当前 IP/区域可能被站点屏蔽，或连接被干扰"
   },
-  "welcome": "欢迎使用 obytes 应用"
+  "welcome": "欢迎使用 obytes 应用",
+  "logs": {
+    "title": "错误日志",
+    "empty": "暂无错误日志",
+    "share": "分享",
+    "clear": "清空",
+    "cleared": "日志已清空",
+    "copy_hint": "长按文字即可选中复制；分享可导出整个日志。"
+  }
 }
