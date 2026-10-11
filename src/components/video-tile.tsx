@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 
 import { Image, Pressable, Text, View } from '@/components/ui';
 import { useVideoActions } from '@/lib/hooks/use-video-actions';
+import { tryBeginVideoOpen } from '@/lib/navigation/open-guard';
 import { useActiveDownload } from '@/lib/stores/active-downloads-store';
 
 /**
@@ -87,6 +88,10 @@ function VideoTileImpl({ item, children }: Props): React.ReactElement {
   ];
 
   const openDetail = () => {
+    // The push is synchronous, but while the open is still in flight (screen
+    // not yet focused) repeat taps on this card are swallowed — each extra
+    // push would stack another post screen with its own native player.
+    if (!tryBeginVideoOpen(item.id)) return;
     router.push({ pathname: '/post/[id]', params: { id: item.id, slug: item.slug } });
   };
 

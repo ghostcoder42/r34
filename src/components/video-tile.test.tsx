@@ -1,3 +1,4 @@
+import { endVideoOpen, resetOpenGuard } from '@/lib/navigation/open-guard';
 import { useDownloadedStore } from '@/lib/stores/downloaded-store';
 import { useFavoritesStore } from '@/lib/stores/favorites-store';
 import { cleanup, fireEvent, render } from '@/lib/test-utils';
@@ -60,6 +61,7 @@ beforeEach(() => {
     entries: [],
     loaded: false,
   });
+  resetOpenGuard();
 });
 
 describe('VideoTile — rendering', () => {
@@ -135,6 +137,43 @@ describe('VideoTile — gestures', () => {
     // this fails. Note: this does NOT verify RN's native press suppression or
     // the native menu — those are verified on device, not in jsdom.
     expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('pushes only once for rapid repeat taps on the same card', () => {
+    const { getByTestId } = render(<VideoTile item={item} />);
+
+    for (let i = 0; i < 6; i++) {
+      fireEvent(getByTestId('video-tile'), 'press');
+    }
+
+    expect(mockPush).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens the same video again once the pushed screen has focused', () => {
+    const { getByTestId } = render(<VideoTile item={item} />);
+
+    fireEvent(getByTestId('video-tile'), 'press');
+    // The post screen reports focus — the open completed.
+    endVideoOpen();
+    fireEvent(getByTestId('video-tile'), 'press');
+
+    expect(mockPush).toHaveBeenCalledTimes(2);
+  });
+
+  it('still navigates for a different card while another open is in flight', () => {
+    const other = { ...item, id: '2' };
+    const { getAllByTestId } = render(
+      <>
+        <VideoTile item={item} />
+        <VideoTile item={other} />
+      </>
+    );
+
+    const tiles = getAllByTestId('video-tile');
+    fireEvent(tiles[0], 'press');
+    fireEvent(tiles[1], 'press');
+
+    expect(mockPush).toHaveBeenCalledTimes(2);
   });
 });
 

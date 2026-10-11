@@ -15,6 +15,9 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
   useLocalSearchParams: jest.fn().mockReturnValue({ id: 'v1', slug: 'my-video' }),
   useFocusEffect: (_cb: () => (() => void) | undefined) => undefined,
+  useNavigation: () => ({
+    addListener: jest.fn(() => jest.fn()),
+  }),
 }));
 
 const mockPlayer = {
