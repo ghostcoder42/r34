@@ -1,3 +1,10 @@
+import { appendErrorLog } from '@/lib/logs/error-log';
+import {
+  FetchError,
+  classifyHttpStatus,
+  classifyTransportError,
+  httpErrorDetail,
+} from '@/lib/r34/fetch-error';
 import { getOrientationFlag1 } from '@/lib/stores/orientation-store';
 import type { VideoDetail, VideoFormat, VideoListItem } from './types';
 
@@ -5,6 +12,22 @@ const BASE_URL = 'https://rule34video.com';
 const USER_AGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 
+/** Record a failure in the error-log file (see Settings → Error log). */
+function logNetworkError(err: FetchError): void {
+  void appendErrorLog({
+    kind: err.kind,
+    status: err.status,
+    url: err.url,
+    detail: err.detail || err.message,
+  });
+}
+
+/**
+ * Fetch a page as text with a desktop UA + timeout. Failures are classified
+ * (timeout / Cloudflare block / offline / site-unreachable / …) into
+ * `FetchError`s the UI can render specific messages for, and recorded in the
+ * in-app error log.
+ */
 export async function fetchPage(url: string): Promise<string> {
   const controller = new AbortController();
   // Hard cap so a slow/hanging URL errors out instead of spinning forever.
@@ -19,21 +42,26 @@ export async function fetchPage(url: string): Promise<string> {
     });
 
     if (!response.ok) {
-      // Attach the status so callers can tell "page gone" (404/410) apart
-      // from reachability problems (offline, timeout, 5xx, …).
-      const error = new Error(`Failed to fetch ${url}: ${response.status}`) as Error & {
-        status?: number;
-      };
-      error.status = response.status;
-      throw error;
+      // The status lets callers tell "page gone" (404/410) apart from
+      // reachability problems (offline, timeout, 5xx, …); the body is sniffed
+      // for a Cloudflare interstitial so a bot block reads as one.
+      const body = await response.text().catch(() => '');
+      const err = new FetchError(classifyHttpStatus(response.status), {
+        message: `Failed to fetch ${url}: ${response.status}`,
+        status: response.status,
+        url,
+        detail: httpErrorDetail({ status: response.status, body }),
+      });
+      logNetworkError(err);
+      throw err;
     }
 
     return await response.text();
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error(`Request timed out: ${url}`);
-    }
-    throw error;
+    if (error instanceof FetchError) throw error;
+    const appErr = await classifyTransportError(error, url);
+    logNetworkError(appErr);
+    throw appErr;
   } finally {
     clearTimeout(timeout);
   }

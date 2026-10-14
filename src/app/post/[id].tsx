@@ -12,6 +12,7 @@ import { useVideoAutoplay } from '@/lib/hooks/use-video-autoplay';
 import { useTranslate } from '@/lib/i18n';
 import { endVideoOpen } from '@/lib/navigation/open-guard';
 import { artistChipLabel } from '@/lib/r34/artists';
+import { fetchErrorMessage } from '@/lib/r34/fetch-error';
 import { toOfflineDetail } from '@/lib/r34/offline-detail';
 import type { VideoDetail, VideoFormat } from '@/lib/r34/types';
 import { baseIdOf, useDownloadedStore } from '@/lib/stores/downloaded-store';
@@ -283,6 +284,7 @@ export default function Post(): React.ReactElement | null {
     isPending,
     isError,
     error,
+    refetch,
   } = useVideoDetail({
     variables: { id: local.id, slug },
   });
@@ -371,16 +373,19 @@ export default function Post(): React.ReactElement | null {
   }
 
   if (!data) {
+    // What went wrong, specifically (timeout / Cloudflare block / offline /
+    // site unreachable / …) — falls back to the generic line only when the
+    // failure isn't a classified fetch error.
+    const reason = isError ? fetchErrorMessage(error) : t('post.load_error');
     return (
       <View className="flex-1 items-center justify-center bg-white p-6 dark:bg-black">
         <Stack.Screen options={{ title: 'Error' }} />
         <FocusAwareStatusBar />
         <Text className="mb-2 text-lg font-bold text-neutral-900 dark:text-white">
-          Something went wrong
+          {t('post.load_failed_title')}
         </Text>
-        <Text className="text-center text-neutral-500 dark:text-neutral-400">
-          We couldn't load this video. Please try again later.
-        </Text>
+        <Text className="mb-4 text-center text-neutral-500 dark:text-neutral-400">{reason}</Text>
+        <Button label={t('common.retry')} onPress={() => refetch()} variant="outline" />
       </View>
     );
   }

@@ -2,11 +2,23 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { useOrientationStore } from '@/lib/stores/orientation-store';
-import { buildListUrl, buildVideoUrl, parseVideoDetail, parseVideoList } from './scraper';
+import {
+  buildListUrl,
+  buildVideoUrl,
+  fetchPage,
+  parseVideoDetail,
+  parseVideoList,
+} from './scraper';
 
 const fixturesDir = join(__dirname, '..', '..', '..', '__mocks__', 'fixtures');
 
 const loadFixture = (name: string) => readFileSync(join(fixturesDir, name), 'utf-8');
+
+// fetchPage writes each classified failure to the on-disk error log; keep the
+// test suite off the real filesystem.
+jest.mock('@/lib/logs/error-log', () => ({
+  appendErrorLog: jest.fn().mockResolvedValue(undefined),
+}));
 
 describe('scraper', () => {
   describe('parseVideoList', () => {
@@ -226,6 +238,41 @@ describe('scraper', () => {
       expect(buildVideoUrl('12345', 'test-video')).toBe(
         'https://rule34video.com/video/12345/test-video/'
       );
+    });
+  });
+
+  describe('fetchPage', () => {
+    const realFetch = globalThis.fetch;
+    afterEach(() => {
+      globalThis.fetch = realFetch;
+    });
+
+    it('throws a FetchError carrying the kind and status for non-2xx responses', async () => {
+      globalThis.fetch = (async () => ({
+        ok: false,
+        status: 404,
+        text: async () => '',
+      })) as unknown as typeof fetch;
+      await expect(fetchPage('https://rule34video.com/video/1/x/')).rejects.toMatchObject({
+        name: 'FetchError',
+        kind: 'not-found',
+        status: 404,
+      });
+    });
+
+    it('classifies a 403 as blocked with the bare Access denied body as detail', async () => {
+      // Live-verified shape: the site's DDoS-Guard refuses non-browser clients
+      // with a plain-text "Access denied." and no other markers.
+      globalThis.fetch = (async () => ({
+        ok: false,
+        status: 403,
+        text: async () => 'Access denied.',
+      })) as unknown as typeof fetch;
+      await expect(fetchPage('https://rule34video.com/')).rejects.toMatchObject({
+        kind: 'blocked',
+        status: 403,
+        detail: 'Access denied.',
+      });
     });
   });
 });

@@ -4,7 +4,8 @@
     "clear": "Borrar",
     "delete": "Eliminar",
     "done": "Listo",
-    "error": "Error"
+    "error": "Error",
+    "retry": "Reintentar"
   },
   "tabs": {
     "home": "Inicio",
@@ -34,6 +35,7 @@
     "clear_downloads_msg": "¿Eliminar todos los videos descargados? Esto no se puede deshacer.",
     "clear_downloads_title": "Borrar descargas",
     "data_storage": "Datos y almacenamiento",
+    "error_log": "Registro de errores",
     "general": "General",
     "github": "Github",
     "hide_preview": "Ocultar vista previa",
@@ -121,7 +123,9 @@
   },
   "post": {
     "video_removed": "Este vídeo ha sido eliminado del sitio",
-    "site_unreachable": "No se puede acceder al sitio; comprueba tu conexión"
+    "site_unreachable": "No se puede acceder al sitio; comprueba tu conexión",
+    "load_failed_title": "Algo salió mal",
+    "load_error": "No se pudo cargar este video. Inténtalo de nuevo más tarde."
   },
   "net": {
     "offline": "Parece que no tienes conexión; comprueba tu red",
@@ -129,7 +133,17 @@
     "rate_limited": "Demasiadas solicitudes; inténtalo de nuevo en unos momentos",
     "server": "El sitio tiene problemas ({{status}}); inténtalo más tarde",
     "not_found": "Este contenido ya no existe",
-    "http_error": "Error en la solicitud ({{status}}); inténtalo más tarde"
+    "http_error": "Error en la solicitud ({{status}}); inténtalo más tarde",
+    "blocked": "Acceso denegado ({{status}}): el sitio rechazó esta solicitud, inténtalo de nuevo más tarde",
+    "unreachable": "Hay internet, pero no se puede acceder al sitio: tu IP/región puede estar bloqueada o la conexión está siendo interferida"
   },
-  "welcome": "Bienvenido a la aplicación obytes"
+  "welcome": "Bienvenido a la aplicación obytes",
+  "logs": {
+    "title": "Registro de errores",
+    "empty": "Aún no hay errores",
+    "share": "Compartir",
+    "clear": "Borrar",
+    "cleared": "Registro borrado",
+    "copy_hint": "Mantén pulsado el texto para seleccionarlo y copiarlo; Compartir envía el registro completo."
+  }
 }

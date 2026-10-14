@@ -4,7 +4,8 @@
     "clear": "清除",
     "delete": "刪除",
     "done": "完成",
-    "error": "錯誤"
+    "error": "錯誤",
+    "retry": "重試"
   },
   "tabs": {
     "home": "首頁",
@@ -34,6 +35,7 @@
     "clear_downloads_msg": "刪除所有已下載的影片?此操作無法復原。",
     "clear_downloads_title": "清除下載",
     "data_storage": "資料與儲存",
+    "error_log": "錯誤日誌",
     "general": "一般",
     "github": "Github",
     "hide_preview": "隱藏預覽",
@@ -121,7 +123,9 @@
   },
   "post": {
     "video_removed": "目前影片已被網站刪除",
-    "site_unreachable": "無法存取網站，請檢查網路"
+    "site_unreachable": "無法存取網站，請檢查網路",
+    "load_failed_title": "發生問題",
+    "load_error": "無法載入此影片，請稍後再試。"
   },
   "net": {
     "offline": "網路連線不可用，請檢查網路",
@@ -129,7 +133,17 @@
     "rate_limited": "請求過於頻繁，請稍後再試",
     "server": "網站服務暫時無法使用（{{status}}），請稍後重試",
     "not_found": "內容不存在或已被移除",
-    "http_error": "請求失敗（{{status}}），請稍後重試"
+    "http_error": "請求失敗（{{status}}），請稍後重試",
+    "blocked": "存取被拒絕（{{status}}）——站點拒絕了本次存取，請稍後再試",
+    "unreachable": "網路正常，但無法連線站點——目前 IP/區域可能被站點封鎖，或連線受干擾"
   },
-  "welcome": "歡迎使用 obytes 應用"
+  "welcome": "歡迎使用 obytes 應用",
+  "logs": {
+    "title": "錯誤日誌",
+    "empty": "尚無錯誤日誌",
+    "share": "分享",
+    "clear": "清空",
+    "cleared": "日誌已清空",
+    "copy_hint": "長按文字即可選取複製；分享可匯出整個日誌。"
+  }
 }

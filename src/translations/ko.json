@@ -4,7 +4,8 @@
     "clear": "삭제",
     "delete": "삭제",
     "done": "완료",
-    "error": "오류"
+    "error": "오류",
+    "retry": "재시도"
   },
   "tabs": {
     "home": "홈",
@@ -34,6 +35,7 @@
     "clear_downloads_msg": "다운로드한 모든 동영상을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
     "clear_downloads_title": "다운로드 삭제",
     "data_storage": "데이터 및 저장공간",
+    "error_log": "오류 로그",
     "general": "일반",
     "github": "Github",
     "hide_preview": "미리보기 숨기기",
@@ -121,7 +123,9 @@
   },
   "post": {
     "video_removed": "이 영상은 사이트에서 삭제되었습니다",
-    "site_unreachable": "사이트에 연결할 수 없습니다. 네트워크를 확인하세요"
+    "site_unreachable": "사이트에 연결할 수 없습니다. 네트워크를 확인하세요",
+    "load_failed_title": "문제가 발생했습니다",
+    "load_error": "이 영상을 불러올 수 없습니다. 나중에 다시 시도해 주세요."
   },
   "net": {
     "offline": "네트워크에 연결할 수 없습니다. 연결을 확인하세요",
@@ -129,7 +133,17 @@
     "rate_limited": "요청이 너무 많습니다. 잠시 후 다시 시도하세요",
     "server": "사이트에 일시적인 문제가 있습니다({{status}}). 잠시 후 다시 시도하세요",
     "not_found": "콘텐츠가 없거나 삭제되었습니다",
-    "http_error": "요청이 실패했습니다({{status}}). 잠시 후 다시 시도하세요"
+    "http_error": "요청이 실패했습니다({{status}}). 잠시 후 다시 시도하세요",
+    "blocked": "액세스가 거부되었습니다({{status}}) — 사이트가 이 요청을 거부했습니다. 나중에 다시 시도해 주세요",
+    "unreachable": "인터넷은 정상이지만 사이트에 연결할 수 없습니다 — IP/지역이 차단되었거나 연결이 방해받고 있을 수 있습니다"
   },
-  "welcome": "obytes 앱에 오신 것을 환영합니다"
+  "welcome": "obytes 앱에 오신 것을 환영합니다",
+  "logs": {
+    "title": "오류 로그",
+    "empty": "아직 오류가 없습니다",
+    "share": "공유",
+    "clear": "지우기",
+    "cleared": "로그를 지웠습니다",
+    "copy_hint": "텍스트를 길게 눌러 선택하고 복사할 수 있습니다. 공유로 전체 로그를 보낼 수 있습니다."
+  }
 }

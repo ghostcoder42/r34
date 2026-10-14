@@ -10,6 +10,7 @@ import { flattenUniquePages } from '@/lib/flatten-pages';
 import { useColumns } from '@/lib/hooks/use-columns';
 import { useFetchErrorToast } from '@/lib/hooks/use-fetch-error-toast';
 import type { Post } from '@/lib/r34/extractor';
+import { fetchErrorMessage } from '@/lib/r34/fetch-error';
 import { useTagStore } from '@/lib/stores/tag-store';
 
 export default function TagPage(): React.ReactElement {
@@ -43,7 +44,9 @@ export default function TagPage(): React.ReactElement {
       <SafeAreaView className="flex-1 items-center justify-center bg-white dark:bg-neutral-900">
         <Stack.Screen options={{ title: 'Error' }} />
         <FocusAwareStatusBar />
-        <Text className="text-lg text-neutral-900 dark:text-white">Error loading tag</Text>
+        <Text className="px-6 text-center text-lg text-neutral-900 dark:text-white">
+          {fetchErrorMessage(error)}
+        </Text>
         <TouchableOpacity
           onPress={() => refetch()}
           className="mt-4 rounded-lg bg-primary-500 px-4 py-2"

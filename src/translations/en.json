@@ -4,7 +4,8 @@
     "clear": "Clear",
     "delete": "Delete",
     "done": "Done",
-    "error": "Error"
+    "error": "Error",
+    "retry": "Retry"
   },
   "tabs": {
     "home": "Home",
@@ -34,6 +35,7 @@
     "clear_downloads_msg": "Delete all downloaded videos? This cannot be undone.",
     "clear_downloads_title": "Clear Downloads",
     "data_storage": "Data & Storage",
+    "error_log": "Error log",
     "general": "General",
     "github": "Github",
     "hide_preview": "Hide Preview",
@@ -121,7 +123,9 @@
   },
   "post": {
     "video_removed": "This video has been removed from the site",
-    "site_unreachable": "Couldn't reach the site — check your connection"
+    "site_unreachable": "Couldn't reach the site — check your connection",
+    "load_failed_title": "Something went wrong",
+    "load_error": "We couldn't load this video. Please try again later."
   },
   "net": {
     "offline": "You appear to be offline — check your connection",
@@ -129,7 +133,17 @@
     "rate_limited": "Too many requests — try again soon",
     "server": "The site is having trouble ({{status}}) — try again later",
     "not_found": "This content no longer exists",
-    "http_error": "Request failed ({{status}}) — try again later"
+    "http_error": "Request failed ({{status}}) — try again later",
+    "blocked": "Access denied ({{status}}) — the site refused this request, try again later",
+    "unreachable": "Internet works, but the site cannot be reached — your IP/region may be blocked or the connection is being interfered with"
   },
-  "welcome": "Welcome to obytes app site"
+  "welcome": "Welcome to obytes app site",
+  "logs": {
+    "title": "Error log",
+    "empty": "No errors yet",
+    "share": "Share",
+    "clear": "Clear",
+    "cleared": "Log cleared",
+    "copy_hint": "Long-press the text to select and copy; Share sends the whole log."
+  }
 }
