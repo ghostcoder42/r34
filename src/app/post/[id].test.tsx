@@ -11,6 +11,9 @@ jest.mock('expo-router', () => ({
   useFocusEffect: (cb: () => (() => void) | undefined) => {
     mockEffectCallback = cb;
   },
+  useNavigation: () => ({
+    addListener: jest.fn(() => jest.fn()),
+  }),
 }));
 
 const mockPlayer = {

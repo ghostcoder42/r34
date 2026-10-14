@@ -1,5 +1,5 @@
 import { useEvent } from 'expo';
-import { Link, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Link, Stack, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
@@ -10,6 +10,7 @@ import { ActivityIndicator, Button, FocusAwareStatusBar, Text } from '@/componen
 import { useVideoDownload } from '@/lib/hooks';
 import { useVideoAutoplay } from '@/lib/hooks/use-video-autoplay';
 import { useTranslate } from '@/lib/i18n';
+import { endVideoOpen } from '@/lib/navigation/open-guard';
 import { artistChipLabel } from '@/lib/r34/artists';
 import { toOfflineDetail } from '@/lib/r34/offline-detail';
 import type { VideoDetail, VideoFormat } from '@/lib/r34/types';
@@ -72,23 +73,76 @@ function VideoSection({ data }: VideoSectionProps): React.ReactElement {
 
   const { autoplayEnabled } = useVideoAutoplay();
 
+  // Focus guard: a screen stacked under another one (rapid duplicate pushes,
+  // post→tag/author→post chains) — or one whose detail query resolves long
+  // after the user backed out — must never start playing. Its blur-time
+  // pause() ran before the stream source landed and was a no-op, so a late
+  // autoplay would layer audio under the focused screen.
+  const isFocusedRef = React.useRef(true);
+
   const player = useVideoPlayer(videoSource, (player) => {
     player.loop = true;
+    // Autoplay intent belongs to the player's CONSTRUCTION, not to an effect
+    // afterwards: useVideoPlayer recreates the whole native player when the
+    // source lands (empty → url), and a play() fired right after that
+    // recreation can race the native prepare and be dropped — the video then
+    // sits paused forever (reproduced on hanime1's Android 8.1 device: paused
+    // overlay, no buffering, manual play starts instantly). Playing here, in
+    // the same tick as creation, gives the intent its earliest chance; the
+    // statusChange retry below covers the rest.
+    if (autoplayEnabled && videoSource && isFocusedRef.current) {
+      try {
+        player.play();
+      } catch {
+        // Source not prepared yet — statusChange retry re-asserts autoplay.
+      }
+    }
   });
 
   const { isPlaying } = useEvent(player, 'playingChange', {
     isPlaying: player.playing,
   });
+  const { status } = useEvent(player, 'statusChange', {
+    status: player.status,
+  });
+
+  // Manual pause (while this screen is focused) must win over autoplay
+  // retries. A pause that arrives with focus already lost is the blur
+  // cleanup, not the user. `hasPlayed` keeps the initial paused state from
+  // counting as a user pause.
+  const userPausedRef = React.useRef(false);
+  const hasPlayedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (isPlaying) {
+      userPausedRef.current = false;
+      hasPlayedRef.current = true;
+    } else if (hasPlayedRef.current && isFocusedRef.current) {
+      userPausedRef.current = true;
+    }
+  }, [isPlaying]);
 
   // Start playback when the page opens (and when the source changes, e.g. a
   // quality switch or the download taking over) — unless the user turned
   // autoplay off. Manual pausing is never overridden: the effect only runs
   // when the source or the setting itself changes.
   React.useEffect(() => {
-    if (autoplayEnabled && videoSource) {
+    if (autoplayEnabled && videoSource && isFocusedRef.current) {
       player.play();
     }
   }, [autoplayEnabled, player, videoSource]);
+
+  // Compensation retry: even with construction-time intent, re-assert autoplay
+  // once the native player reports readiness — belt and suspenders for
+  // prepare-race paths that drop the initial intent (see setup comment).
+  React.useEffect(() => {
+    if (status !== 'readyToPlay' || !autoplayEnabled || userPausedRef.current) return;
+    if (!isFocusedRef.current) return;
+    try {
+      player.play();
+    } catch {
+      // Player being released — nothing to do.
+    }
+  }, [status, autoplayEnabled, player]);
 
   // The screen stays mounted in the stack after navigating away (e.g. to a
   // tag or another post), so the player keeps playing — and two posts pushed
@@ -99,10 +153,12 @@ function VideoSection({ data }: VideoSectionProps): React.ReactElement {
   const wasPlayingRef = React.useRef(false);
   useFocusEffect(
     React.useCallback(() => {
+      isFocusedRef.current = true;
       if (wasPlayingRef.current) {
         player.play();
       }
       return () => {
+        isFocusedRef.current = false;
         try {
           wasPlayingRef.current = player.playing;
           player.pause();
@@ -237,6 +293,33 @@ export default function Post(): React.ReactElement | null {
   );
   const data = networkData ?? (downloaded ? toOfflineDetail(downloaded, local.id) : undefined);
   const addHistory = useHistoryStore((s) => s.addHistory);
+
+  // Release the single-flight navigation guard when the OPEN truly completes.
+  // Focus fires on the first frame after the push — while the stack
+  // transition animation (~300ms) is still running, the source screen stays
+  // visible AND touchable, so taps landing inside that window could push the
+  // same video again (reproduced on hanime1: furious tapping stacked 2+
+  // screens). The transition's end is the moment the card is finally covered.
+  const navigation = useNavigation();
+  React.useEffect(() => {
+    // expo-router's navigation prop doesn't type native-stack's transition
+    // events, but the stack navigator emits them at runtime.
+    const transitionNav = navigation as unknown as {
+      addListener: (event: 'transitionEnd', cb: () => void) => () => void;
+    };
+    const unsubscribe = transitionNav.addListener('transitionEnd', () => endVideoOpen());
+    return unsubscribe;
+  }, [navigation]);
+
+  // Fallback unlock: the user backed out mid-transition (open aborted), the
+  // screen blurred, or no transition event will fire for this navigator.
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        endVideoOpen();
+      };
+    }, [])
+  );
 
   // Why the page info couldn't be refreshed, so the toast can tell the two
   // apart. A removed video shows up two ways: an HTTP 404/410, or a 200

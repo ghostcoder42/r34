@@ -62,6 +62,10 @@ export const useVideoDetail = createQuery<VideoDetail, { id: string; slug: strin
     const html = await fetchPage(url);
     return parseVideoDetail(html, variables.id, variables.slug);
   },
+  // The fetcher already times out after 12s; with the default 3 retries a
+  // dead network keeps the post screen spinning for ~48s+ before the error
+  // state appears, which reads as a freeze. Fail once, let the user retry.
+  retry: 0,
 });
 
 export const useModelVideos = createInfiniteQuery<
