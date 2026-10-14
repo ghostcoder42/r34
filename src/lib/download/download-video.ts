@@ -24,10 +24,15 @@ export type DownloadVideoOptions = {
   onProgress?: (ratio: number) => void;
 };
 
-/** Active resumables so an in-flight download can be cancelled. Keyed by baseId. */
+/**
+ * Live resumables, keyed by baseId. Kept on FAILURE too — that is what makes
+ * a retry resumable: `resumeAsync()` continues from the bytes already on
+ * disk. Entries are dropped on success, cancel and app restart (resume state
+ * is in-memory only; after a restart the partial file's size is the offset).
+ */
 const activeResumables = new Map<
   string,
-  { resumable: FileSystem.DownloadResumable; fileUri: string }
+  { resumable: FileSystem.DownloadResumable; fileUri: string; opts: DownloadVideoOptions }
 >();
 
 /** Per-baseId throttle state for progress updates (avoids a render storm). */
@@ -44,26 +49,62 @@ function reportProgress(baseId: string, written: number, expected: number) {
     .setProgress(baseId, written / Math.max(1, expected), written, expected);
 }
 
+/** Shared success path for downloadAsync() and resumeAsync() results. */
+async function finalizeDownload(
+  opts: DownloadVideoOptions,
+  result: FileSystem.FileSystemDownloadResult | undefined
+): Promise<DownloadMetadata> {
+  const { videoId, title, thumbnail, slug, uploader, uploaderMemberId } = opts;
+  const baseId = baseIdOf(videoId);
+  if (!result?.uri) {
+    throw new Error('Download failed: no file produced');
+  }
+  // If the user cancelled during the final stretch, don't register; drop the file.
+  if (useActiveDownloadsStore.getState().tasks[baseId]?.status === 'cancelled') {
+    try {
+      await FileSystem.deleteAsync(result.uri);
+    } catch {
+      // ignore
+    }
+    throw new Error('Download cancelled');
+  }
+
+  const fileInfo = await FileSystem.getInfoAsync(result.uri);
+  const size = (fileInfo as FileSystem.FileInfo & { size: number }).size || 0;
+  const quality = videoId.split('_').pop() || 'unknown';
+
+  const metadata: DownloadMetadata = {
+    videoId,
+    title,
+    thumbnail,
+    slug,
+    uploader,
+    uploaderMemberId,
+    uri: result.uri,
+    size,
+    quality,
+    downloadedAt: Date.now(),
+  };
+
+  await saveDownloadMetadata(metadata);
+  // Keep the reactive store in sync so badges light up across the app.
+  useDownloadedStore.getState().register(metadata);
+  useActiveDownloadsStore.getState().complete(baseId);
+  return metadata;
+}
+
 /**
  * Downloads a single video to disk, persists its metadata, and keeps both the
  * reactive completed store and the active-downloads store in sync. Shared by the
  * post-page download button and the long-press context menu.
  *
  * Callers should add the task to the active-downloads store (start) BEFORE
- * calling this; downloadVideo then drives progress / complete / fail.
+ * calling this; downloadVideo then drives progress / complete / fail. This is
+ * the from-scratch path — resume goes through retryDownload, which reuses the
+ * resumable kept from the failed/paused attempt (or the partial file itself).
  */
 export async function downloadVideo(opts: DownloadVideoOptions): Promise<DownloadMetadata> {
-  const {
-    videoUrl,
-    videoId,
-    title,
-    thumbnail,
-    downloadPath,
-    slug,
-    uploader,
-    uploaderMemberId,
-    onProgress,
-  } = opts;
+  const { videoUrl, videoId, downloadPath, onProgress } = opts;
   const baseId = baseIdOf(videoId);
 
   const videosDir = `${FileSystem.documentDirectory}${downloadPath}/`;
@@ -73,6 +114,15 @@ export async function downloadVideo(opts: DownloadVideoOptions): Promise<Downloa
   if (!dirInfo.exists) {
     await FileSystem.makeDirectoryAsync(videosDir, { intermediates: true });
   }
+  // Drop any partial file from an earlier interrupted attempt so this always
+  // starts clean — this is the from-scratch path, resume goes through the
+  // resumable kept from the failed attempt instead.
+  try {
+    const stale = await FileSystem.getInfoAsync(fileUri);
+    if (stale.exists) await FileSystem.deleteAsync(fileUri, { idempotent: true });
+  } catch {
+    // ignore — worst case the resumable overwrites it
+  }
 
   const downloadResumable = FileSystem.createDownloadResumable(videoUrl, fileUri, {}, (dl) => {
     const written = dl.totalBytesWritten;
@@ -80,7 +130,7 @@ export async function downloadVideo(opts: DownloadVideoOptions): Promise<Downloa
     onProgress?.(expected > 0 ? written / expected : 0);
     reportProgress(baseId, written, expected);
   });
-  activeResumables.set(baseId, { resumable: downloadResumable, fileUri });
+  activeResumables.set(baseId, { resumable: downloadResumable, fileUri, opts });
 
   try {
     useActiveDownloadsStore.getState().setStatus(baseId, 'downloading');
@@ -92,99 +142,159 @@ export async function downloadVideo(opts: DownloadVideoOptions): Promise<Downloa
       quality: videoId.split('_').pop() || 'unknown',
     });
     const result = await downloadResumable.downloadAsync();
-    if (!result?.uri) {
-      throw new Error('Download failed: no file produced');
-    }
-    // If the user cancelled during the final stretch, don't register; drop the file.
-    if (useActiveDownloadsStore.getState().tasks[baseId]?.status === 'cancelled') {
-      try {
-        await FileSystem.deleteAsync(result.uri);
-      } catch {
-        // ignore
-      }
-      throw new Error('Download cancelled');
-    }
-
-    const fileInfo = await FileSystem.getInfoAsync(result.uri);
-    const size = (fileInfo as FileSystem.FileInfo & { size: number }).size || 0;
-    const quality = videoId.split('_').pop() || 'unknown';
-
-    const metadata: DownloadMetadata = {
-      videoId,
-      title,
-      thumbnail,
-      slug,
-      uploader,
-      uploaderMemberId,
-      uri: result.uri,
-      size,
-      quality,
-      downloadedAt: Date.now(),
-    };
-
-    await saveDownloadMetadata(metadata);
-    // Keep the reactive store in sync so badges light up across the app.
-    useDownloadedStore.getState().register(metadata);
-    useActiveDownloadsStore.getState().complete(baseId);
-    return metadata;
+    return await finalizeDownload(opts, result);
   } catch (error) {
-    // If the task was already removed/marked cancelled, this was a user cancel,
-    // not a failure — don't surface it as an error.
+    // If the task was already removed/marked cancelled/paused, this was user
+    // action, not a failure — don't surface it as an error.
     const task = useActiveDownloadsStore.getState().tasks[baseId];
-    if (task && task.status !== 'cancelled') {
+    if (task && task.status !== 'cancelled' && task.status !== 'paused') {
       useActiveDownloadsStore
         .getState()
         .fail(baseId, error instanceof Error ? error.message : 'Download failed');
     }
     throw error;
   } finally {
-    activeResumables.delete(baseId);
+    // Keep the resumable (and its on-disk bytes) on failure AND pause so the
+    // task can resume from where it stopped; drop it otherwise.
+    const status = useActiveDownloadsStore.getState().tasks[baseId]?.status;
+    if (status !== 'error' && status !== 'paused') activeResumables.delete(baseId);
     progressTick.delete(baseId);
   }
 }
 
 /**
- * Cancels an in-flight download (from the active-downloads UI): cancels the
- * resumable, deletes the partial file, and removes the active task. If the
- * download already finished (not in the registry) this just clears the task.
+ * Pauses an in-flight download (from the library row). pauseAsync stops the
+ * native task at a clean boundary and captures the exact resume offset; the
+ * task stays in the table as `paused` with its resumable kept for resuming.
  */
-export async function cancelDownload(baseId: string): Promise<void> {
+export async function pauseDownload(baseId: string): Promise<void> {
   const entry = activeResumables.get(baseId);
-  // Signal cancellation first so the in-flight downloadVideo won't mark `fail`.
-  useActiveDownloadsStore.getState().setStatus(baseId, 'cancelled');
+  const task = useActiveDownloadsStore.getState().tasks[baseId];
+  if (!entry || !task || task.status !== 'downloading') return;
 
-  if (!entry) {
-    useActiveDownloadsStore.getState().remove(baseId);
-    return;
-  }
-
-  activeResumables.delete(baseId);
-  progressTick.delete(baseId);
+  // Mark first so the downloadAsync() rejection below is understood as a pause.
+  useActiveDownloadsStore.getState().setStatus(baseId, 'paused');
   try {
-    await entry.resumable.cancelAsync();
+    await entry.resumable.pauseAsync();
   } catch {
-    // ignore
+    // Pause failed (task already finishing, …) — the final stretch either
+    // completes the download or the task stays paused for a disk-offset resume.
   }
-  try {
-    const info = await FileSystem.getInfoAsync(entry.fileUri);
-    if (info.exists) {
-      await FileSystem.deleteAsync(entry.fileUri);
-    }
-  } catch {
-    // ignore
-  }
-  useActiveDownloadsStore.getState().remove(baseId);
 }
 
-/** Removes a leftover partial file so the next attempt starts clean. */
-async function deletePartialFile(fileUri: string): Promise<void> {
+/**
+ * Removes a leftover partial file so the next attempt starts clean. Returns
+ * the file's on-disk size when it exists (0 otherwise) — after a restart that
+ * size is the resume offset for rebuilding a resumable.
+ */
+async function partialFileInfo(fileUri: string): Promise<number> {
   try {
     const info = await FileSystem.getInfoAsync(fileUri);
-    if (info.exists) {
-      await FileSystem.deleteAsync(fileUri);
-    }
+    return info.exists && 'size' in info ? info.size : 0;
   } catch {
-    // ignore — a partial file only wastes space, it doesn't block the retry
+    return 0;
+  }
+}
+
+/**
+ * Continue a failed OR paused download task (library row / watch button /
+ * tile menu). Resumes from the bytes already on disk — either through the
+ * resumable kept from the failed/paused attempt, or (after an app restart) by
+ * rebuilding one from the partial file's size. Falls back to a fresh download
+ * with a re-resolved source when resuming is not possible; returns false when
+ * no source can be resolved — the task stays errored and the caller should
+ * offer deletion instead.
+ */
+export async function retryDownload(baseId: string): Promise<boolean> {
+  const task = useActiveDownloadsStore.getState().tasks[baseId];
+  if (!task || (task.status !== 'error' && task.status !== 'paused')) return false;
+
+  // A resumed task is no longer paused.
+  if (task.status === 'paused') {
+    useActiveDownloadsStore.getState().setStatus(baseId, 'downloading');
+  }
+
+  // 1) Resume an interrupted transfer where it stopped.
+  let entry = activeResumables.get(baseId);
+  if (!entry && task.videoUrl && task.videoId) {
+    // After an app restart there is no live resumable, but the partial file
+    // IS the resume point: its on-disk size is the byte offset (the native
+    // side truncates to it and sends `Range: bytes=<size>-`). A too-low
+    // offset is safe; the file simply resumes from slightly earlier.
+    const fileUri = `${FileSystem.documentDirectory}${getDownloadPath()}/${task.videoId}.mp4`;
+    const partial = await partialFileInfo(fileUri);
+    if (partial > 0) {
+      const opts: DownloadVideoOptions = {
+        videoUrl: task.videoUrl,
+        videoId: task.videoId,
+        title: task.title,
+        thumbnail: task.thumbnail,
+        downloadPath: getDownloadPath(),
+        slug: task.slug,
+        uploader: task.uploader,
+        uploaderMemberId: task.uploaderMemberId,
+      };
+      const resumable = new FileSystem.DownloadResumable(
+        task.videoUrl,
+        fileUri,
+        {},
+        (dl) => reportProgress(baseId, dl.totalBytesWritten, dl.totalBytesExpectedToWrite),
+        String(partial)
+      );
+      entry = { resumable, fileUri, opts };
+      activeResumables.set(baseId, entry);
+    }
+  }
+
+  if (entry) {
+    useActiveDownloadsStore.getState().setStatus(baseId, 'downloading');
+    try {
+      const result = await entry.resumable.resumeAsync();
+      await finalizeDownload(entry.opts, result);
+      activeResumables.delete(baseId);
+      return true;
+    } catch (error) {
+      // Resume didn't work (expired source URL, range rejected, …). Fall
+      // through to a fresh download; mark the failure so the row stays
+      // actionable if that path also dies immediately.
+      const current = useActiveDownloadsStore.getState().tasks[baseId];
+      if (current && current.status !== 'cancelled' && current.status !== 'paused') {
+        useActiveDownloadsStore
+          .getState()
+          .fail(baseId, error instanceof Error ? error.message : 'Download failed');
+      }
+      activeResumables.delete(baseId);
+    }
+  }
+
+  // 2) Fresh download, preferring a newly resolved source URL.
+  const downloadPath = getDownloadPath();
+  // Reset synchronously so a second tap (or the failure path below) always
+  // sees a consistent task.
+  useActiveDownloadsStore.getState().restart(baseId);
+  try {
+    const source = await resolveRetrySource(task);
+    await downloadVideo({
+      videoUrl: source.videoUrl,
+      videoId: source.videoId,
+      title: task.title,
+      thumbnail: task.thumbnail,
+      downloadPath,
+      slug: task.slug,
+      uploader: task.uploader,
+      uploaderMemberId: task.uploaderMemberId,
+    });
+    return true;
+  } catch (error) {
+    // resolveRetrySource failures don't pass through downloadVideo's own
+    // error handling — mark the task failed so the UI keeps offering retry.
+    const current = useActiveDownloadsStore.getState().tasks[baseId];
+    if (current && current.status !== 'cancelled' && current.status !== 'paused') {
+      useActiveDownloadsStore
+        .getState()
+        .fail(baseId, error instanceof Error ? error.message : 'Download failed');
+    }
+    return false;
   }
 }
 
@@ -214,41 +324,46 @@ async function resolveRetrySource(
 }
 
 /**
- * Retries a failed download from the Downloads tab (or anywhere else that has
- * the baseId). Only error tasks can be retried; the task keeps its row and
- * runs through the normal progress → complete/fail lifecycle again. Errors are
- * reported through the task state, not the returned promise.
+ * Cancels an in-flight download (from the active-downloads UI): cancels the
+ * resumable, deletes the partial file, and removes the active task. When there
+ * is no resumable (already errored/paused) the partial file is still deleted —
+ * this is also the "remove failed/paused task" path.
  */
-export async function retryDownload(baseId: string): Promise<void> {
-  const task = useActiveDownloadsStore.getState().tasks[baseId];
-  if (!task || task.status !== 'error') return;
+export async function cancelDownload(baseId: string): Promise<void> {
+  const entry = activeResumables.get(baseId);
+  // Signal cancellation first so the in-flight downloadVideo won't mark `fail`.
+  useActiveDownloadsStore.getState().setStatus(baseId, 'cancelled');
 
-  // Reset synchronously so a second tap (or the failure path below) always
-  // sees a consistent task.
-  useActiveDownloadsStore.getState().restart(baseId);
-
-  const downloadPath = getDownloadPath();
-  try {
-    const source = await resolveRetrySource(task);
-    await deletePartialFile(`${FileSystem.documentDirectory}${downloadPath}/${source.videoId}.mp4`);
-    await downloadVideo({
-      videoUrl: source.videoUrl,
-      videoId: source.videoId,
-      title: task.title,
-      thumbnail: task.thumbnail,
-      downloadPath,
-      slug: task.slug,
-      uploader: task.uploader,
-      uploaderMemberId: task.uploaderMemberId,
-    });
-  } catch (error) {
-    // resolveRetrySource failures don't pass through downloadVideo's own
-    // error handling — mark the task failed so the UI keeps offering retry.
-    const current = useActiveDownloadsStore.getState().tasks[baseId];
-    if (current && current.status !== 'cancelled') {
-      useActiveDownloadsStore
-        .getState()
-        .fail(baseId, error instanceof Error ? error.message : 'Download failed');
+  if (!entry) {
+    // No resumable (task already errored/paused): still clear its partial file.
+    const task = useActiveDownloadsStore.getState().tasks[baseId];
+    if (task?.videoId) {
+      const fileUri = `${FileSystem.documentDirectory}${getDownloadPath()}/${task.videoId}.mp4`;
+      try {
+        const info = await FileSystem.getInfoAsync(fileUri);
+        if (info.exists) await FileSystem.deleteAsync(fileUri, { idempotent: true });
+      } catch {
+        // ignore
+      }
     }
+    useActiveDownloadsStore.getState().remove(baseId);
+    return;
   }
+
+  activeResumables.delete(baseId);
+  progressTick.delete(baseId);
+  try {
+    await entry.resumable.cancelAsync();
+  } catch {
+    // ignore
+  }
+  try {
+    const info = await FileSystem.getInfoAsync(entry.fileUri);
+    if (info.exists) {
+      await FileSystem.deleteAsync(entry.fileUri);
+    }
+  } catch {
+    // ignore
+  }
+  useActiveDownloadsStore.getState().remove(baseId);
 }

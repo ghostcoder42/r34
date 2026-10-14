@@ -1,10 +1,9 @@
 import * as FileSystem from 'expo-file-system/legacy';
-import * as React from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 
-import { downloadVideo } from '@/lib/download/download-video';
-import { useActiveDownloadsStore } from '@/lib/stores/active-downloads-store';
-import { baseIdOf } from '@/lib/stores/downloaded-store';
+import { downloadVideo, retryDownload } from '@/lib/download/download-video';
+import { useActiveDownload, useActiveDownloadsStore } from '@/lib/stores/active-downloads-store';
+import { baseIdOf, useDownloadedStore } from '@/lib/stores/downloaded-store';
 
 import { useDownloadSettings } from './use-download-settings';
 
@@ -18,6 +17,12 @@ type UseVideoDownloadProps = {
   videoUploaderMemberId?: string;
 };
 
+/**
+ * Post-page download button state. Everything reactive (progress, error,
+ * in-flight) is derived from the active-downloads store so the button, the
+ * library row and the tile badges all tell the same story — including a retry
+ * resuming mid-file.
+ */
 export const useVideoDownload = ({
   videoUrl,
   videoId,
@@ -27,31 +32,36 @@ export const useVideoDownload = ({
   videoUploader,
   videoUploaderMemberId,
 }: UseVideoDownloadProps) => {
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState(0);
-  const [isDownloaded, setIsDownloaded] = useState(false);
-  const [error, setError] = React.useState<Error | null>(null);
-
   const { downloadPath } = useDownloadSettings();
 
   const baseId = baseIdOf(videoId);
   const fileUri = `${FileSystem.documentDirectory}${downloadPath}/${videoId}.mp4`;
+  const isDownloaded = useDownloadedStore((s) => s.downloadedBaseIds.has(baseId));
+  const active = useActiveDownload(baseId);
 
-  React.useEffect(() => {
-    const checkFile = async () => {
-      try {
-        const fileInfo = await FileSystem.getInfoAsync(fileUri);
-        setIsDownloaded(fileInfo.exists);
-      } catch (e) {
-        console.error('Error checking file existence:', e);
-      }
-    };
-    checkFile();
-  }, [fileUri]);
+  const isDownloading =
+    !!active && (active.status === 'downloading' || active.status === 'preparing');
+  const downloadProgress = active
+    ? active.progress < 0
+      ? 0
+      : active.progress
+    : isDownloaded
+      ? 1
+      : 0;
+  const error = active?.status === 'error' ? new Error(active.error ?? 'Download failed') : null;
 
   const handleDownload = useCallback(async () => {
-    if (isDownloading || !videoUrl) return;
-    if (useActiveDownloadsStore.getState().tasks[baseId]) return; // already active
+    if (!videoUrl) return;
+    const existing = useActiveDownloadsStore.getState().tasks[baseId];
+    if (existing && existing.status !== 'error' && existing.status !== 'paused') {
+      return; // already active
+    }
+    // An errored or paused task continues (resuming from the bytes already
+    // on disk when the previous attempt stopped mid-transfer).
+    if (existing) {
+      await retryDownload(baseId);
+      return;
+    }
 
     // Surface immediately so the active-downloads list / tile badge light up now.
     // The full source (url/quality/uploader) is captured by downloadVideo so a
@@ -66,9 +76,6 @@ export const useVideoDownload = ({
     });
 
     try {
-      setError(null);
-      setIsDownloading(true);
-
       await downloadVideo({
         videoUrl,
         videoId,
@@ -78,23 +85,19 @@ export const useVideoDownload = ({
         slug: videoSlug,
         uploader: videoUploader,
         uploaderMemberId: videoUploaderMemberId,
-        onProgress: setDownloadProgress,
       });
-      setIsDownloaded(true);
     } catch (e) {
       const task = useActiveDownloadsStore.getState().tasks[baseId];
-      if (!task || task.status === 'cancelled') return; // cancelled -> silent
+      // Cancelled or paused (by the user) -> user action, not a failure.
+      // On some Android versions pauseAsync settles downloadAsync without a
+      // result; that rejection must not relabel the paused task as errored.
+      if (!task || task.status === 'cancelled' || task.status === 'paused') return;
       const msg = e instanceof Error ? e.message : 'Download failed';
       if (task.status !== 'error') {
         useActiveDownloadsStore.getState().fail(baseId, msg);
       }
-      setError(e instanceof Error ? e : new Error('Download failed'));
-    } finally {
-      setIsDownloading(false);
-      setDownloadProgress(0);
     }
   }, [
-    isDownloading,
     videoUrl,
     videoId,
     baseId,

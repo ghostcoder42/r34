@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Platform } from 'react-native';
 
 import { Image, Pressable, Text, View } from '@/components/ui';
+import { retryDownload } from '@/lib/download/download-video';
 import { useVideoActions } from '@/lib/hooks/use-video-actions';
 import { tryBeginVideoOpen } from '@/lib/navigation/open-guard';
 import { useActiveDownload } from '@/lib/stores/active-downloads-store';
@@ -62,7 +63,13 @@ function VideoTileImpl({ item, children }: Props): React.ReactElement {
         break;
       }
       case 'download': {
-        void toggleDownload();
+        // An errored/paused task continues (resuming from the bytes already
+        // on disk when the previous attempt stopped mid-transfer).
+        if (active?.status === 'error' || active?.status === 'paused') {
+          void retryDownload(item.id);
+        } else {
+          void toggleDownload();
+        }
         break;
       }
       case 'follow': {
@@ -80,9 +87,19 @@ function VideoTileImpl({ item, children }: Props): React.ReactElement {
     },
     {
       id: 'download',
-      title: isActive ? 'Downloading…' : isDownloaded ? 'Downloaded' : 'Download',
+      title:
+        active?.status === 'error' || active?.status === 'paused'
+          ? 'Resume download'
+          : isActive
+            ? 'Downloading…'
+            : isDownloaded
+              ? 'Downloaded'
+              : 'Download',
       state: (isDownloaded ? 'on' : 'off') as 'on' | 'off',
-      attributes: isActive || isDownloaded ? { disabled: true } : undefined,
+      attributes:
+        isActive && active?.status !== 'error' && active?.status !== 'paused'
+          ? { disabled: true }
+          : undefined,
     },
     { id: 'follow', title: 'Follow author' },
   ];

@@ -1,4 +1,5 @@
 import { endVideoOpen, resetOpenGuard } from '@/lib/navigation/open-guard';
+import { useActiveDownloadsStore } from '@/lib/stores/active-downloads-store';
 import { useDownloadedStore } from '@/lib/stores/downloaded-store';
 import { useFavoritesStore } from '@/lib/stores/favorites-store';
 import { cleanup, fireEvent, render } from '@/lib/test-utils';
@@ -11,7 +12,7 @@ import { VideoTile } from './video-tile';
 // jest's mock factory can reference it.
 const mockMenu = {
   lastProps: {} as {
-    actions?: { id: string; title: string }[];
+    actions?: { id: string; title: string; attributes?: { disabled?: boolean } }[];
     onPressAction?: (e: { nativeEvent: { event: string } }) => void;
   },
 };
@@ -24,6 +25,14 @@ jest.mock('@react-native-menu/menu', () => {
   };
   return { MenuView };
 });
+
+const mockRetryDownload = jest.fn().mockResolvedValue(true);
+jest.mock('@/lib/download/download-video', () => ({
+  downloadVideo: jest.fn(),
+  cancelDownload: jest.fn(),
+  pauseDownload: jest.fn(),
+  retryDownload: (...args: unknown[]) => mockRetryDownload(...args),
+}));
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
@@ -61,6 +70,8 @@ beforeEach(() => {
     entries: [],
     loaded: false,
   });
+  useActiveDownloadsStore.setState({ tasks: {} });
+  mockRetryDownload.mockClear();
   resetOpenGuard();
 });
 
@@ -204,5 +215,81 @@ describe('VideoTile — context menu actions', () => {
     mockMenu.lastProps.onPressAction?.({ nativeEvent: { event: 'favorite' } });
 
     expect(useFavoritesStore.getState().favorites.some((f) => f.id === '1')).toBe(true);
+  });
+
+  it('offers Resume download (enabled) when the task is errored or paused', () => {
+    useActiveDownloadsStore.setState({
+      tasks: {
+        '1': {
+          baseId: '1',
+          title: 'My Video',
+          thumbnail: '',
+          progress: 0.4,
+          status: 'error',
+          startedAt: 0,
+        },
+      },
+    });
+    render(<VideoTile item={item} />);
+    const errored = mockMenu.lastProps.actions?.find((a) => a.id === 'download');
+    expect(errored?.title).toBe('Resume download');
+    expect(errored?.attributes?.disabled).toBeUndefined();
+
+    useActiveDownloadsStore.setState({
+      tasks: {
+        '1': {
+          baseId: '1',
+          title: 'My Video',
+          thumbnail: '',
+          progress: 0.4,
+          status: 'paused',
+          startedAt: 0,
+        },
+      },
+    });
+    render(<VideoTile item={item} />);
+    const paused = mockMenu.lastProps.actions?.find((a) => a.id === 'download');
+    expect(paused?.title).toBe('Resume download');
+    expect(paused?.attributes?.disabled).toBeUndefined();
+  });
+
+  it('disables Download while the task is actively downloading', () => {
+    useActiveDownloadsStore.setState({
+      tasks: {
+        '1': {
+          baseId: '1',
+          title: 'My Video',
+          thumbnail: '',
+          progress: 0.4,
+          status: 'downloading',
+          startedAt: 0,
+        },
+      },
+    });
+    render(<VideoTile item={item} />);
+
+    const downloadAction = mockMenu.lastProps.actions?.find((a) => a.id === 'download');
+    expect(downloadAction?.title).toBe('Downloading…');
+    expect(downloadAction?.attributes?.disabled).toBe(true);
+  });
+
+  it("resumes (retries) instead of starting fresh when a paused task's download is dispatched", () => {
+    useActiveDownloadsStore.setState({
+      tasks: {
+        '1': {
+          baseId: '1',
+          title: 'My Video',
+          thumbnail: '',
+          progress: 0.4,
+          status: 'paused',
+          startedAt: 0,
+        },
+      },
+    });
+    render(<VideoTile item={item} />);
+
+    mockMenu.lastProps.onPressAction?.({ nativeEvent: { event: 'download' } });
+
+    expect(mockRetryDownload).toHaveBeenCalledWith('1');
   });
 });

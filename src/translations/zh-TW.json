@@ -5,6 +5,8 @@
     "delete": "刪除",
     "done": "完成",
     "error": "錯誤",
+    "pause": "暫停",
+    "resume": "繼續",
     "retry": "重試"
   },
   "tabs": {
@@ -102,6 +104,7 @@
     "status_downloading": "下載中 · {{progress}}%",
     "status_downloading_indeterminate": "下載中…",
     "status_failed": "失敗{{error}}",
+    "status_paused": "已暫停",
     "tap_retry_hint": " — 點擊重試再試一次",
     "title": "媒體庫"
   },

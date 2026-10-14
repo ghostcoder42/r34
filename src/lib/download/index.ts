@@ -37,10 +37,15 @@ export async function getAllDownloads(): Promise<DownloadMetadata[]> {
 
 /**
  * Deletes video files on disk that have no matching metadata entry ("orphans",
- * e.g. from past interrupted downloads or a metadata reset). Returns the number
- * of files removed. Best-effort: missing dir / unreadable files are ignored.
+ * e.g. from past downloads whose metadata was reset). Partial files belonging
+ * to an unfinished task are NOT orphans — they are the resume point, so their
+ * names must be passed in `excludeFileNames`. Returns the number of files
+ * removed. Best-effort: missing dir / unreadable files are ignored.
  */
-export async function reconcileDownloads(downloadPath = 'videos'): Promise<number> {
+export async function reconcileDownloads(
+  downloadPath = 'videos',
+  excludeFileNames: Set<string> = new Set()
+): Promise<number> {
   const store = getDownloadStore();
   const entries = Object.values(store);
   const firstUri = entries[0]?.uri;
@@ -53,7 +58,7 @@ export async function reconcileDownloads(downloadPath = 'videos'): Promise<numbe
   try {
     const files = await FileSystem.readDirectoryAsync(dir);
     for (const file of files) {
-      if (expected.has(file)) continue;
+      if (expected.has(file) || excludeFileNames.has(file)) continue;
       try {
         await FileSystem.deleteAsync(`${dir}${file}`);
         removed += 1;

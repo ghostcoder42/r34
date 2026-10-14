@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 import { getItem, setItem } from '@/lib/storage';
 
-export type ActiveDownloadStatus = 'preparing' | 'downloading' | 'error' | 'cancelled';
+export type ActiveDownloadStatus = 'preparing' | 'downloading' | 'paused' | 'error' | 'cancelled';
 
 export type ActiveDownload = {
   baseId: string;
@@ -73,10 +73,13 @@ function persistUnfinished(tasks: Record<string, ActiveDownload>): void {
 
 /**
  * Restores persisted tasks into the store (no-op when there are none). Called
- * once on app start, before the Downloads tab can be shown. Error tasks come
- * back with their message; in-flight tasks come back marked "Interrupted" and
- * reset, ready for Retry. Tasks without any way to resolve a download source
- * (neither a stored URL nor a slug) are dropped.
+ * once on app start, before the Downloads tab can be shown — and before the
+ * orphan cleanup, so partial files of interrupted/paused tasks are spared
+ * (their on-disk bytes are the resume point). Error tasks come back with
+ * their message; user-paused tasks stay paused; in-flight (`preparing`/
+ * `downloading`) tasks died with the process and come back marked
+ * "Interrupted", ready for Retry. Tasks without any way to resolve a download
+ * source (neither a stored URL nor a slug) are dropped.
  */
 export function restoreUnfinishedDownloads(): void {
   const saved = getItem<Record<string, ActiveDownload>>(UNFINISHED_TASKS_KEY) ?? {};
@@ -84,8 +87,8 @@ export function restoreUnfinishedDownloads(): void {
     Object.entries(saved)
       .filter(([, task]) => task?.baseId && (task.videoUrl || task.slug))
       .map(([id, task]): [string, ActiveDownload] =>
-        task.status === 'error'
-          ? [id, task]
+        task.status === 'error' || task.status === 'paused'
+          ? [id, task] // already actionable (retry / resume) — keep as-is
           : [
               id,
               {

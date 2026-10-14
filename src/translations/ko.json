@@ -5,6 +5,8 @@
     "delete": "삭제",
     "done": "완료",
     "error": "오류",
+    "pause": "일시정지",
+    "resume": "계속",
     "retry": "재시도"
   },
   "tabs": {
@@ -102,6 +104,7 @@
     "status_downloading": "다운로드 중 · {{progress}}%",
     "status_downloading_indeterminate": "다운로드 중…",
     "status_failed": "실패{{error}}",
+    "status_paused": "일시정지됨",
     "tap_retry_hint": " — 다시 시도를 눌러 재시도하세요",
     "title": "보관함"
   },

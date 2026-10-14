@@ -121,6 +121,13 @@ describe('unfinished-download persistence', () => {
     expect(persistedTasks()['2'].status).toBe('downloading');
   });
 
+  it('persists paused tasks so they survive an app restart as paused', () => {
+    useActiveDownloadsStore.getState().start({ baseId: '1', title: 'T', thumbnail: '' });
+    useActiveDownloadsStore.getState().setStatus('1', 'paused');
+
+    expect(persistedTasks()['1'].status).toBe('paused');
+  });
+
   it('keeps the source fields so the failure stays retryable after a restart', () => {
     useActiveDownloadsStore.getState().start({ baseId: '1', title: 'T', thumbnail: '' });
     useActiveDownloadsStore
@@ -145,6 +152,24 @@ describe('unfinished-download persistence', () => {
     useActiveDownloadsStore.getState().fail('2', 'x');
     useActiveDownloadsStore.getState().complete('2');
     expect(persistedTasks()).toEqual({});
+  });
+
+  it('restores a user-paused task as paused (it did not die with the process)', () => {
+    useActiveDownloadsStore.getState().start({ baseId: '1', title: 'T', thumbnail: '' });
+    useActiveDownloadsStore
+      .getState()
+      .setSource('1', { videoUrl: 'https://cdn/v.mp4', videoId: '1_720p', quality: '720p' });
+    useActiveDownloadsStore.getState().setProgress('1', 0.47, 47, 100);
+    useActiveDownloadsStore.getState().setStatus('1', 'paused');
+    // Simulate a restart: fresh in-memory store, storage still populated.
+    useActiveDownloadsStore.setState({ tasks: {} });
+
+    restoreUnfinishedDownloads();
+
+    const task = useActiveDownloadsStore.getState().tasks['1'];
+    expect(task?.status).toBe('paused');
+    // The on-disk bytes are the resume point, so the progress is kept too.
+    expect(task?.progress).toBe(0.47);
   });
 
   it('restores an interrupted in-flight task as a retryable "Interrupted" error', () => {
