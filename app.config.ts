@@ -119,6 +119,7 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       './plugins/with-app-icons',
       './plugins/with-android-no-lint',
       './plugins/with-gradle-build-cache',
+      './plugins/with-android-gradle-name',
     ],
     extra: {
       ...ClientEnv,

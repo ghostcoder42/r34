@@ -51,6 +51,15 @@ const withEnvSuffix = (name) => {
 };
 
 /**
+ * Non-production display names carry a short env suffix ("r34 dev").
+ * @param {string} name
+ */
+const withNameSuffix = (name) => {
+  if (APP_ENV === 'production') return name;
+  return `${name} ${APP_ENV === 'development' ? 'dev' : APP_ENV}`;
+};
+
+/**
  * 2nd part: Define your env variables schema
  * we use zod to define our env variables schema
  *
@@ -90,7 +99,7 @@ const buildTime = z.object({
  */
 const _clientEnv = {
   APP_ENV,
-  NAME: NAME,
+  NAME: withNameSuffix(NAME),
   SCHEME: SCHEME,
   BUNDLE_ID: withEnvSuffix(BUNDLE_ID),
   PACKAGE: withEnvSuffix(PACKAGE),

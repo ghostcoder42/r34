@@ -53,14 +53,15 @@ function capitalize(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-function buildAlias(androidPackage, icon, enabled) {
+function buildAlias(androidPackage, icon, enabled, appName) {
   return {
     $: {
       'android:name': `${androidPackage}.MainActivityIcon${capitalize(icon.name)}`,
       'android:enabled': enabled ? 'true' : 'false',
       'android:exported': 'true',
       'android:icon': `@drawable/ic_launcher_${icon.name}`,
-      'android:label': 'r34',
+      // Follows config.name, which carries an env suffix on test builds.
+      'android:label': appName,
       'android:targetActivity': '.MainActivity',
     },
     'intent-filter': [LAUNCHER_INTENT_FILTER],
@@ -104,8 +105,14 @@ function withIosAlternateIcons(config) {
     const proj = mod.modResults;
     const projectRoot = mod.modRequest.projectRoot;
     const platformRoot = mod.modRequest.platformProjectRoot; // ios/
-    const projectName = config.slug || config.name;
-    const sourceDir = path.join(platformRoot, projectName);
+    // Expo names the Xcode project dir from the sanitized config.name, not
+    // the slug — resolve it from the .xcodeproj on disk.
+    const xcodeproj = fs.readdirSync(platformRoot).find((entry) => entry.endsWith('.xcodeproj'));
+    if (!xcodeproj) {
+      console.warn(`[with-app-icons] no .xcodeproj found in ${platformRoot}; skipping iOS icons`);
+      return mod;
+    }
+    const sourceDir = path.join(platformRoot, xcodeproj.replace(/\.xcodeproj$/, ''));
 
     for (const icon of APP_ICONS) {
       if (icon.name === 'default') continue;
@@ -172,7 +179,9 @@ module.exports = function withAppIcons(config) {
 
     // 2. One launcher alias per icon (default enabled, rest disabled).
     const app = getMainApplication(manifest);
-    app['activity-alias'] = APP_ICONS.map((icon, i) => buildAlias(androidPackage, icon, i === 0));
+    app['activity-alias'] = APP_ICONS.map((icon, i) =>
+      buildAlias(androidPackage, icon, i === 0, config.name)
+    );
 
     // 3. Copy the icon PNGs into res/drawable so the aliases resolve.
     copyIconDrawables(projectRoot);
