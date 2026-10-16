@@ -57,6 +57,17 @@ describe('scraper', () => {
       expect(videos[0].id).toBe('4398873');
     });
 
+    it('falls back to img src when the list has no data-original', () => {
+      const html = loadFixture('video-list-src.html');
+      const videos = parseVideoList(html);
+
+      expect(videos.length).toBe(1);
+      expect(videos[0].id).toBe('4670750');
+      expect(videos[0].thumbnail).toBe(
+        'https://rule34video.com/contents/videos_screenshots/4670000/4670750/336x189/1.jpg'
+      );
+    });
+
     it('returns empty array for empty HTML', () => {
       const html = loadFixture('empty.html');
       const videos = parseVideoList(html);

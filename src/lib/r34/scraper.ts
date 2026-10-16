@@ -80,7 +80,10 @@ export function parseVideoList(html: string): VideoListItem[] {
     const region = html.slice(start, start + 3000);
     const pick = (re: RegExp): string | undefined => region.match(re)?.[1]?.trim();
 
-    const thumbnail = pick(/data-original="([^"]+)"/);
+    // The site serves either lazy-load markup (data-original) or a direct src.
+    const thumbnail =
+      pick(/data-original="([^"]+)"/) ||
+      pick(/<img[^>]+src="(https:\/\/rule34video\.com\/contents\/videos_screenshots\/[^"]+)"/);
     const preview =
       pick(/<div class="img[^"]*"\s+data-preview="([^"]*)"/) || pick(/data-preview="([^"]*)"/);
     const duration = pick(/<div class="time">([^<]+)<\/div>/);
