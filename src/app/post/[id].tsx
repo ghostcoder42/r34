@@ -1,256 +1,99 @@
-import { useEvent } from 'expo';
 import { Link, Stack, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
-import { VideoView, useVideoPlayer } from 'expo-video';
 import * as React from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
+import Animated, {
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated';
 
 import { useVideoDetail } from '@/api/video-queries';
+import { GesturePlayer } from '@/components/player/gesture-player';
 import { ActivityIndicator, Button, FocusAwareStatusBar, Text } from '@/components/ui';
-import { useVideoDownload } from '@/lib/hooks';
-import { useVideoAutoplay } from '@/lib/hooks/use-video-autoplay';
+import { usePostPlayer } from '@/lib/hooks/use-post-player';
 import { useTranslate } from '@/lib/i18n';
 import { endVideoOpen } from '@/lib/navigation/open-guard';
 import { artistChipLabel } from '@/lib/r34/artists';
 import { fetchErrorMessage } from '@/lib/r34/fetch-error';
 import { toOfflineDetail } from '@/lib/r34/offline-detail';
-import type { VideoDetail, VideoFormat } from '@/lib/r34/types';
+import type { VideoDetail } from '@/lib/r34/types';
 import { baseIdOf, useDownloadedStore } from '@/lib/stores/downloaded-store';
 import { useFavoritesStore } from '@/lib/stores/favorites-store';
 import { useHistoryStore } from '@/lib/stores/history-store';
 
-type VideoSectionProps = {
+/** Top offset of the pinned inline player: clears the transparent header (mt-14). */
+const PLAYER_TOP = 56;
+
+/** GesturePlayer fills its animated frame (inline band ↔ fullscreen). */
+const PLAYER_FILL = { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as const;
+
+type VideoBarProps = {
   data: VideoDetail;
+  player: ReturnType<typeof usePostPlayer>;
 };
 
-function VideoSection({ data }: VideoSectionProps): React.ReactElement {
-  const [selectedQuality, setSelectedQuality] = React.useState<string>('');
-  const [selectedFormat, setSelectedFormat] = React.useState<VideoFormat | null>(null);
-  // Set when the user taps a quality pill; after that the selection is theirs.
-  const manualPickRef = React.useRef(false);
-
-  // Any downloaded copy of this video (regardless of quality). When present it
-  // owns the player source — a download must stay playable offline, so neither
-  // a successful network refresh nor a failed/deleted video page may move the
-  // player back to a network URL.
-  const downloaded = useDownloadedStore(
-    (s) => s.entries.find((e) => baseIdOf(e.videoId) === data.id) ?? null
-  );
-
-  React.useEffect(() => {
-    if (manualPickRef.current) return;
-    // The downloaded file wins even when the network detail offers other
-    // qualities (it defaults to 720p) or arrives after this page opened.
-    if (downloaded) {
-      setSelectedQuality(downloaded.quality);
-      setSelectedFormat({ url: downloaded.uri, quality: downloaded.quality, ext: 'mp4' });
-      return;
-    }
-    if (data.formats?.length) {
-      const defaultFormat = data.formats.find((f) => f.quality === '720p') || data.formats[0];
-      setSelectedQuality(defaultFormat.quality);
-      setSelectedFormat(defaultFormat);
-    }
-  }, [downloaded, data.formats]);
-
-  const {
-    isDownloading,
-    downloadProgress,
-    isDownloaded,
-    handleDownload,
-    fileUri,
-    error: downloadError,
-  } = useVideoDownload({
-    videoUrl: selectedFormat?.url || '',
-    videoId: `${data.id}_${selectedQuality}`,
-    videoTitle: data.title,
-    videoThumbnail: data.thumbnail,
-    videoSlug: data.slug,
-    videoUploader: data.uploader,
-    videoUploaderMemberId: data.uploaderMemberId,
-  });
-
-  const videoSource = isDownloaded && fileUri ? fileUri : selectedFormat?.url || '';
-
-  const { autoplayEnabled } = useVideoAutoplay();
-
-  // Focus guard: a screen stacked under another one (rapid duplicate pushes,
-  // post→tag/author→post chains) — or one whose detail query resolves long
-  // after the user backed out — must never start playing. Its blur-time
-  // pause() ran before the stream source landed and was a no-op, so a late
-  // autoplay would layer audio under the focused screen.
-  const isFocusedRef = React.useRef(true);
-
-  const player = useVideoPlayer(videoSource, (player) => {
-    player.loop = true;
-    // Autoplay intent belongs to the player's CONSTRUCTION, not to an effect
-    // afterwards: useVideoPlayer recreates the whole native player when the
-    // source lands (empty → url), and a play() fired right after that
-    // recreation can race the native prepare and be dropped — the video then
-    // sits paused forever (reproduced on hanime1's Android 8.1 device: paused
-    // overlay, no buffering, manual play starts instantly). Playing here, in
-    // the same tick as creation, gives the intent its earliest chance; the
-    // statusChange retry below covers the rest.
-    if (autoplayEnabled && videoSource && isFocusedRef.current) {
-      try {
-        player.play();
-      } catch {
-        // Source not prepared yet — statusChange retry re-asserts autoplay.
-      }
-    }
-  });
-
-  const { isPlaying } = useEvent(player, 'playingChange', {
-    isPlaying: player.playing,
-  });
-  const { status } = useEvent(player, 'statusChange', {
-    status: player.status,
-  });
-
-  // Manual pause (while this screen is focused) must win over autoplay
-  // retries. A pause that arrives with focus already lost is the blur
-  // cleanup, not the user. `hasPlayed` keeps the initial paused state from
-  // counting as a user pause.
-  const userPausedRef = React.useRef(false);
-  const hasPlayedRef = React.useRef(false);
-  React.useEffect(() => {
-    if (isPlaying) {
-      userPausedRef.current = false;
-      hasPlayedRef.current = true;
-    } else if (hasPlayedRef.current && isFocusedRef.current) {
-      userPausedRef.current = true;
-    }
-  }, [isPlaying]);
-
-  // Start playback when the page opens (and when the source changes, e.g. a
-  // quality switch or the download taking over) — unless the user turned
-  // autoplay off. Manual pausing is never overridden: the effect only runs
-  // when the source or the setting itself changes.
-  React.useEffect(() => {
-    if (autoplayEnabled && videoSource && isFocusedRef.current) {
-      player.play();
-    }
-  }, [autoplayEnabled, player, videoSource]);
-
-  // Compensation retry: even with construction-time intent, re-assert autoplay
-  // once the native player reports readiness — belt and suspenders for
-  // prepare-race paths that drop the initial intent (see setup comment).
-  React.useEffect(() => {
-    if (status !== 'readyToPlay' || !autoplayEnabled || userPausedRef.current) return;
-    if (!isFocusedRef.current) return;
-    try {
-      player.play();
-    } catch {
-      // Player being released — nothing to do.
-    }
-  }, [status, autoplayEnabled, player]);
-
-  // The screen stays mounted in the stack after navigating away (e.g. to a
-  // tag or another post), so the player keeps playing — and two posts pushed
-  // on top of each other would play simultaneously. Pause whenever this
-  // screen loses focus and restore the previous state when it regains focus
-  // (was playing → resumes, was paused → stays paused), no matter how deep
-  // the navigation stack gets in between.
-  const wasPlayingRef = React.useRef(false);
-  useFocusEffect(
-    React.useCallback(() => {
-      isFocusedRef.current = true;
-      if (wasPlayingRef.current) {
-        player.play();
-      }
-      return () => {
-        isFocusedRef.current = false;
-        try {
-          wasPlayingRef.current = player.playing;
-          player.pause();
-        } catch {
-          // Player already released (screen unmounting) — nothing to do.
-        }
-      };
-    }, [player])
-  );
+/** Quality pills + download action (the strip under the pinned player). */
+function VideoActionBar({ data, player }: VideoBarProps): React.ReactElement {
+  const { selectedQuality, selectFormat, download } = player;
+  const { isDownloading, downloadProgress, isDownloaded, handleDownload, error } = download;
 
   return (
-    <View className="bg-black">
-      <View className="relative mt-14 aspect-video w-full bg-neutral-900">
-        {videoSource ? (
-          <VideoView
-            player={player}
-            showsTimecodes
-            contentFit="contain"
-            className="size-full"
-            style={{ width: '100%', height: '100%' }}
-          />
-        ) : (
-          <View className="flex-1 items-center justify-center">
-            <Text className="text-white">No video source available</Text>
-          </View>
-        )}
-        {!isPlaying && videoSource && (
-          <View className="pointer-events-none absolute inset-0 items-center justify-center bg-black/20" />
-        )}
-      </View>
-
-      <View className="border-b border-neutral-200 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900">
-        <View className="flex-row flex-wrap items-start justify-between gap-y-3">
-          <View className="min-w-[50%] flex-1 gap-2">
-            <Text className="text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-              {isDownloaded ? 'Offline Ready' : 'Stream Ready'}
-            </Text>
-            {data.formats && data.formats.length > 0 && (
-              <View className="flex-row flex-wrap gap-2">
-                {data.formats.map((format) => (
-                  <Button
-                    key={format.quality}
-                    variant={selectedQuality === format.quality ? 'default' : 'secondary'}
-                    onPress={() => {
-                      manualPickRef.current = true;
-                      setSelectedQuality(format.quality);
-                      setSelectedFormat(format);
-                    }}
-                    className="h-8 px-3"
-                    textClassName="text-xs"
-                    label={format.quality}
-                  />
-                ))}
-              </View>
-            )}
-          </View>
-
-          <View className="self-start">
-            {isDownloaded ? (
-              <View className="flex-row items-center rounded-full bg-green-100 px-3 py-1.5 dark:bg-green-900/30">
-                <Text className="text-xs font-semibold text-green-700 dark:text-green-400">
-                  DOWNLOADED
-                </Text>
-              </View>
-            ) : (
-              selectedFormat && (
+    <View className="border-b border-neutral-200 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900">
+      <View className="flex-row flex-wrap items-start justify-between gap-y-3">
+        <View className="min-w-[50%] flex-1 gap-2">
+          <Text className="text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            {isDownloaded ? 'Offline Ready' : 'Stream Ready'}
+          </Text>
+          {data.formats && data.formats.length > 0 && (
+            <View className="flex-row flex-wrap gap-2">
+              {data.formats.map((format) => (
                 <Button
-                  onPress={handleDownload}
-                  disabled={isDownloading}
-                  variant="outline"
-                  className="h-10 rounded-full border-primary-500 px-5"
-                >
-                  <View className="flex-row items-center">
-                    <Text className="text-sm font-semibold text-primary-600 dark:text-primary-400">
-                      {isDownloading ? `${Math.round(downloadProgress * 100)}%` : 'DOWNLOAD'}
-                    </Text>
-                  </View>
-                </Button>
-              )
-            )}
-          </View>
+                  key={format.quality}
+                  variant={selectedQuality === format.quality ? 'default' : 'secondary'}
+                  onPress={() => selectFormat(format)}
+                  className="h-8 px-3"
+                  textClassName="text-xs"
+                  label={format.quality}
+                />
+              ))}
+            </View>
+          )}
         </View>
 
-        {downloadError && (
-          <View className="mt-2 rounded bg-red-50 px-4 py-2 dark:bg-red-900/20">
-            <Text className="text-xs text-red-600 dark:text-red-400">
-              Download Failed: {downloadError.message}
-            </Text>
-          </View>
-        )}
+        <View className="self-start">
+          {isDownloaded ? (
+            <View className="flex-row items-center rounded-full bg-green-100 px-3 py-1.5 dark:bg-green-900/30">
+              <Text className="text-xs font-semibold text-green-700 dark:text-green-400">
+                DOWNLOADED
+              </Text>
+            </View>
+          ) : (
+            player.videoSource && (
+              <Button
+                onPress={handleDownload}
+                disabled={isDownloading}
+                variant="outline"
+                className="h-10 rounded-full border-primary-500 px-5"
+              >
+                <View className="flex-row items-center">
+                  <Text className="text-sm font-semibold text-primary-600 dark:text-primary-400">
+                    {isDownloading ? `${Math.round(downloadProgress * 100)}%` : 'DOWNLOAD'}
+                  </Text>
+                </View>
+              </Button>
+            )
+          )}
+        </View>
       </View>
+
+      {error && (
+        <View className="mt-2 rounded bg-red-50 px-4 py-2 dark:bg-red-900/20">
+          <Text className="text-xs text-red-600 dark:text-red-400">
+            Download Failed: {error.message}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -296,25 +139,24 @@ export default function Post(): React.ReactElement | null {
   const data = networkData ?? (downloaded ? toOfflineDetail(downloaded, local.id) : undefined);
   const addHistory = useHistoryStore((s) => s.addHistory);
 
+  // Playback: source selection, native player, autoplay lifecycle, fullscreen.
+  const player = usePostPlayer(data);
+
+  const navigation = useNavigation();
+  React.useEffect(() => {
+    // expo-router doesn't type native-stack transition events; emitted at runtime.
+    const transitionNav = navigation as unknown as {
+      addListener: (event: 'transitionEnd', cb: () => void) => () => void;
+    };
+    return transitionNav.addListener('transitionEnd', () => endVideoOpen());
+  }, [navigation]);
+
   // Release the single-flight navigation guard when the OPEN truly completes.
   // Focus fires on the first frame after the push — while the stack
   // transition animation (~300ms) is still running, the source screen stays
   // visible AND touchable, so taps landing inside that window could push the
   // same video again (reproduced on hanime1: furious tapping stacked 2+
   // screens). The transition's end is the moment the card is finally covered.
-  const navigation = useNavigation();
-  React.useEffect(() => {
-    // expo-router's navigation prop doesn't type native-stack's transition
-    // events, but the stack navigator emits them at runtime.
-    const transitionNav = navigation as unknown as {
-      addListener: (event: 'transitionEnd', cb: () => void) => () => void;
-    };
-    const unsubscribe = transitionNav.addListener('transitionEnd', () => endVideoOpen());
-    return unsubscribe;
-  }, [navigation]);
-
-  // Fallback unlock: the user backed out mid-transition (open aborted), the
-  // screen blurred, or no transition event will fire for this navigator.
   useFocusEffect(
     React.useCallback(() => {
       return () => {
@@ -362,6 +204,41 @@ export default function Post(): React.ReactElement | null {
     }
   }, [data, addHistory]);
 
+  // Pinned inline player (16:9 under the transparent header), rendered LAST
+  // so its absolute surface paints above the scroll content. Fullscreen is a
+  // style change only — the same instance (and playback) survives. In inline
+  // mode the band tracks scrollY: it sits under the header at rest and slides
+  // off the top as the page scrolls, exactly like in-flow content (a fixed
+  // band covers ~86% of a landscape tablet, leaving a tiny scrollable strip).
+  const { width } = useWindowDimensions();
+  const inlineHeight = Math.round((width * 9) / 16);
+  const fullscreen = player.fullscreen;
+
+  const scrollYSV = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      scrollYSV.value = e.contentOffset.y;
+    },
+  });
+
+  const playerFrame = useAnimatedStyle(() => {
+    if (fullscreen) {
+      return { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 };
+    }
+    // Rest: top edge at PLAYER_TOP. Fully scrolled: top edge at -inlineHeight
+    // (band hugs y ≤ 0, outside touch reach but inside the parent bounds).
+    const translateY = Math.max(PLAYER_TOP - scrollYSV.value, -inlineHeight);
+    return {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: inlineHeight,
+      zIndex: 10,
+      transform: [{ translateY }],
+    };
+  }, [fullscreen, inlineHeight]);
+
   if (isPending && !data) {
     return (
       <View className="flex-1 items-center justify-center bg-white dark:bg-black">
@@ -402,8 +279,16 @@ export default function Post(): React.ReactElement | null {
       />
       <FocusAwareStatusBar />
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }} bounces={false}>
-        <VideoSection data={data} />
+      <Animated.ScrollView
+        contentContainerStyle={{ paddingBottom: 100 }}
+        bounces={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+      >
+        {!player.fullscreen && (
+          <View style={{ height: PLAYER_TOP + inlineHeight }} className="w-full bg-neutral-900" />
+        )}
+        <VideoActionBar data={data} player={player} />
 
         <View className="p-4">
           <View className="mb-4 flex-row items-start justify-between gap-3">
@@ -521,7 +406,35 @@ export default function Post(): React.ReactElement | null {
             </View>
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
+
+      {/* Player surface — scroll-aware inline band or fullscreen overlay. The
+          frame carries the animated position; GesturePlayer fills it. */}
+      {player.videoSource ? (
+        <Animated.View style={playerFrame}>
+          <GesturePlayer
+            player={player.player}
+            fullscreen={player.fullscreen}
+            onToggleFullscreen={player.setFullscreen}
+            title={data.title}
+            style={PLAYER_FILL}
+          />
+        </Animated.View>
+      ) : (
+        <View
+          style={{
+            position: 'absolute',
+            top: PLAYER_TOP,
+            left: 0,
+            right: 0,
+            height: inlineHeight,
+            zIndex: 10,
+          }}
+          className="items-center justify-center bg-neutral-900"
+        >
+          <Text className="text-white">No video source available</Text>
+        </View>
+      )}
     </View>
   );
 }

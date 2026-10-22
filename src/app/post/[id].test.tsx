@@ -1,18 +1,21 @@
 // Captured from the useFocusEffect mock so tests can drive the focus
-// lifecycle manually: calling the effect simulates screen focus and calling
-// its returned cleanup simulates a blur (navigate away).
+// lifecycle manually: calling each effect simulates screen focus and calling
+// its returned cleanup simulates a blur (navigate away). Multiple effects
+// register (screen + player hook) — ALL are driven together.
 // Prefixed with `mock` so jest's mock factory hoisting can reference it.
-let mockEffectCallback: (() => (() => void) | undefined) | undefined;
+let mockEffectCallbacks: Array<() => (() => void) | undefined> = [];
 
 jest.mock('expo-router', () => ({
   Link: () => null,
   Stack: { Screen: () => null },
   useLocalSearchParams: jest.fn().mockReturnValue({ id: 'v1', slug: 'my-video' }),
   useFocusEffect: (cb: () => (() => void) | undefined) => {
-    mockEffectCallback = cb;
+    // useCallback-stable callbacks re-register on re-render; dedupe.
+    if (!mockEffectCallbacks.includes(cb)) mockEffectCallbacks.push(cb);
   },
   useNavigation: () => ({
     addListener: jest.fn(() => jest.fn()),
+    setOptions: jest.fn(),
   }),
 }));
 
@@ -88,18 +91,19 @@ import { cleanup, render } from '@/lib/test-utils';
 
 import Post from './[id]';
 
-// Drive the focus lifecycle like expo-router does: focusing runs the effect
-// body, blurring runs (only) the cleanup it returned.
-let activeCleanup: (() => void) | undefined;
+// Drive the focus lifecycle like expo-router does: focusing runs every
+// registered effect body, blurring runs (only) the cleanups they returned.
+let activeCleanups: Array<() => void> = [];
 const focus = () => {
-  activeCleanup = mockEffectCallback?.();
+  activeCleanups = mockEffectCallbacks.map((cb) => cb()).filter(Boolean) as Array<() => void>;
 };
 const blur = () => {
-  activeCleanup?.();
-  activeCleanup = undefined;
+  for (const cleanup of activeCleanups) cleanup();
+  activeCleanups = [];
 };
 
 beforeEach(() => {
+  mockEffectCallbacks = [];
   jest.clearAllMocks();
   mockPlayer.playing = false;
   useHistoryStore.setState({ history: [] });

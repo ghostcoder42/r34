@@ -17,6 +17,7 @@ jest.mock('expo-router', () => ({
   useFocusEffect: (_cb: () => (() => void) | undefined) => undefined,
   useNavigation: () => ({
     addListener: jest.fn(() => jest.fn()),
+    setOptions: jest.fn(),
   }),
 }));
 
