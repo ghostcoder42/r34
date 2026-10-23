@@ -50,8 +50,23 @@ jest.mock('react-native-edge-to-edge', () => ({
   SystemBars: () => null,
 }));
 
+// SDK 58: transitively loaded modules (e.g. expo-localization via i18n) pull
+// requireNativeModule from 'expo' at import time — the mock must provide it.
 jest.mock('expo', () => ({
   useEvent: (_player: unknown, _event: string, initial: { isPlaying: boolean }) => initial,
+  requireOptionalNativeModule: () => null,
+  requireNativeModule: () =>
+    new Proxy(
+      {},
+      {
+        get: (_target, prop) =>
+          prop === 'getLocales'
+            ? () => []
+            : () => {
+                throw new Error(`native module method ${String(prop)} unavailable in tests`);
+              },
+      }
+    ),
 }));
 
 jest.mock('@/api/video-queries', () => ({
@@ -114,8 +129,8 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('Post screen — pause on blur', () => {
-  it('pauses the player when the screen loses focus', () => {
-    render(<Post />);
+  it('pauses the player when the screen loses focus', async () => {
+    await render(<Post />);
     focus();
     mockPlayer.playing = true;
 
@@ -125,8 +140,8 @@ describe('Post screen — pause on blur', () => {
     expect(mockPlayer.play).not.toHaveBeenCalled();
   });
 
-  it('resumes playback when regaining focus if the video was playing', () => {
-    render(<Post />);
+  it('resumes playback when regaining focus if the video was playing', async () => {
+    await render(<Post />);
     focus();
     mockPlayer.playing = true;
     blur(); // navigate away — paused
@@ -138,8 +153,8 @@ describe('Post screen — pause on blur', () => {
     expect(mockPlayer.pause).toHaveBeenCalledTimes(1);
   });
 
-  it('does not resume when regaining focus if the video was already paused', () => {
-    render(<Post />);
+  it('does not resume when regaining focus if the video was already paused', async () => {
+    await render(<Post />);
     focus();
     mockPlayer.playing = false;
     blur(); // navigate away
@@ -150,8 +165,8 @@ describe('Post screen — pause on blur', () => {
     expect(mockPlayer.pause).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps the recorded state across multiple blur/focus cycles', () => {
-    render(<Post />);
+  it('keeps the recorded state across multiple blur/focus cycles', async () => {
+    await render(<Post />);
     focus();
     mockPlayer.playing = true;
     blur();
@@ -164,8 +179,8 @@ describe('Post screen — pause on blur', () => {
     expect(mockPlayer.pause).toHaveBeenCalledTimes(2);
   });
 
-  it('swallows errors when the player is already released on unmount', () => {
-    render(<Post />);
+  it('swallows errors when the player is already released on unmount', async () => {
+    await render(<Post />);
     focus();
     mockPlayer.pause = jest.fn(() => {
       throw new Error('player released');

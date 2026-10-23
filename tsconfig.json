@@ -4,7 +4,6 @@
     "strict": true,
     "ignoreDeprecations": "6.0",
     "types": ["jest", "jest-expo"],
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@env": ["./src/lib/env.js"]

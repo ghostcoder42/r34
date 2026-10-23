@@ -1,10 +1,7 @@
-import '@testing-library/react-native/extend-expect';
+import '@testing-library/react-native/matchers';
 
 // react-hook form setup for testing
-// @ts-ignore
-global.window = {};
-// @ts-ignore
-global.window = global;
+global.window = { ...global, name: 'window' } as unknown as typeof global.window;
 
 // Mock react-native-capture-protection (native module not available in jsdom)
 jest.mock('react-native-capture-protection', () =>

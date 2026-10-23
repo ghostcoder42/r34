@@ -27,23 +27,23 @@ beforeEach(() => {
 });
 
 describe('useSelectedLanguage', () => {
-  it('falls back to the language i18n is actually rendering before any pick', () => {
+  it('falls back to the language i18n is actually rendering before any pick', async () => {
     // Fresh install: nothing stored under the LOCAL key — the selector must
     // still highlight what the bootstrap detected (i18n.language), not nothing.
-    const { result } = renderHook(() => useSelectedLanguage());
+    const { result } = await renderHook(() => useSelectedLanguage());
 
     expect(result.current.language).toBe(i18n.language);
   });
 
   it('prefers the stored language once the user has picked one', async () => {
-    const { result } = renderHook(() => useSelectedLanguage());
+    const { result } = await renderHook(() => useSelectedLanguage());
 
     result.current.setLanguage('ja');
 
     // The stored pick wins on the next mount (and i18n switched too).
     expect(i18n.language).toBe('ja');
     expect(mockMMKVStrings.get(LOCAL)).toBe('ja');
-    const { result: again } = renderHook(() => useSelectedLanguage());
+    const { result: again } = await renderHook(() => useSelectedLanguage());
     expect(again.current.language).toBe('ja');
 
     // Restore the default for other suites sharing the i18n singleton.

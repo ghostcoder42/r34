@@ -76,16 +76,16 @@ beforeEach(() => {
 });
 
 describe('VideoTile — rendering', () => {
-  it('renders title, duration and views', () => {
-    const { getByText } = render(<VideoTile item={item} />);
+  it('renders title, duration and views', async () => {
+    const { getByText } = await render(<VideoTile item={item} />);
 
     expect(getByText('My Video')).toBeTruthy();
     expect(getByText('2:30')).toBeTruthy();
     expect(getByText('10 views')).toBeTruthy();
   });
 
-  it('omits duration/views when not provided', () => {
-    const { getByText, queryByText } = render(
+  it('omits duration/views when not provided', async () => {
+    const { getByText, queryByText } = await render(
       <VideoTile item={{ id: '1', slug: 's', title: 'No Meta', thumbnail: '' }} />
     );
 
@@ -93,8 +93,8 @@ describe('VideoTile — rendering', () => {
     expect(queryByText(/views/)).toBeNull();
   });
 
-  it('shows no status badges when not favorited or downloaded', () => {
-    const { queryByTestId } = render(
+  it('shows no status badges when not favorited or downloaded', async () => {
+    const { queryByTestId } = await render(
       <VideoTile item={{ id: '1', slug: 's', title: 'Plain', thumbnail: '' }} />
     );
 
@@ -102,12 +102,12 @@ describe('VideoTile — rendering', () => {
     expect(queryByTestId('video-tile-downloaded')).toBeNull();
   });
 
-  it('shows the favorite badge when the item is favorited', () => {
+  it('shows the favorite badge when the item is favorited', async () => {
     useFavoritesStore.setState({
       favorites: [{ id: '1', slug: 's', title: 't', url: '', thumbnail: '', addedAt: 0 }],
     });
 
-    const { getByTestId, queryByTestId } = render(
+    const { getByTestId, queryByTestId } = await render(
       <VideoTile item={{ id: '1', slug: 's', title: 'Fav', thumbnail: '' }} />
     );
 
@@ -115,10 +115,10 @@ describe('VideoTile — rendering', () => {
     expect(queryByTestId('video-tile-downloaded')).toBeNull();
   });
 
-  it('shows the downloaded badge when the item has a completed download', () => {
+  it('shows the downloaded badge when the item has a completed download', async () => {
     useDownloadedStore.setState({ downloadedBaseIds: new Set(['1']) });
 
-    const { getByTestId, queryByTestId } = render(
+    const { getByTestId, queryByTestId } = await render(
       <VideoTile item={{ id: '1', slug: 's', title: 'Dl', thumbnail: '' }} />
     );
 
@@ -128,10 +128,10 @@ describe('VideoTile — rendering', () => {
 });
 
 describe('VideoTile — gestures', () => {
-  it('navigates to the video detail on short tap', () => {
-    const { getByTestId } = render(<VideoTile item={item} />);
+  it('navigates to the video detail on short tap', async () => {
+    const { getByTestId } = await render(<VideoTile item={item} />);
 
-    fireEvent(getByTestId('video-tile'), 'press');
+    await fireEvent(getByTestId('video-tile'), 'press');
 
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/post/[id]',
@@ -139,10 +139,10 @@ describe('VideoTile — gestures', () => {
     });
   });
 
-  it('long-press handler does not call the navigation function (wiring guard)', () => {
-    const { getByTestId } = render(<VideoTile item={item} />);
+  it('long-press handler does not call the navigation function (wiring guard)', async () => {
+    const { getByTestId } = await render(<VideoTile item={item} />);
 
-    fireEvent(getByTestId('video-tile'), 'longPress');
+    await fireEvent(getByTestId('video-tile'), 'longPress');
 
     // Regression guard: if someone accidentally wires onLongPress to openDetail,
     // this fails. Note: this does NOT verify RN's native press suppression or
@@ -150,30 +150,30 @@ describe('VideoTile — gestures', () => {
     expect(mockPush).not.toHaveBeenCalled();
   });
 
-  it('pushes only once for rapid repeat taps on the same card', () => {
-    const { getByTestId } = render(<VideoTile item={item} />);
+  it('pushes only once for rapid repeat taps on the same card', async () => {
+    const { getByTestId } = await render(<VideoTile item={item} />);
 
     for (let i = 0; i < 6; i++) {
-      fireEvent(getByTestId('video-tile'), 'press');
+      await fireEvent(getByTestId('video-tile'), 'press');
     }
 
     expect(mockPush).toHaveBeenCalledTimes(1);
   });
 
-  it('opens the same video again once the pushed screen has focused', () => {
-    const { getByTestId } = render(<VideoTile item={item} />);
+  it('opens the same video again once the pushed screen has focused', async () => {
+    const { getByTestId } = await render(<VideoTile item={item} />);
 
-    fireEvent(getByTestId('video-tile'), 'press');
+    await fireEvent(getByTestId('video-tile'), 'press');
     // The post screen reports focus — the open completed.
     endVideoOpen();
-    fireEvent(getByTestId('video-tile'), 'press');
+    await fireEvent(getByTestId('video-tile'), 'press');
 
     expect(mockPush).toHaveBeenCalledTimes(2);
   });
 
-  it('still navigates for a different card while another open is in flight', () => {
+  it('still navigates for a different card while another open is in flight', async () => {
     const other = { ...item, id: '2' };
-    const { getAllByTestId } = render(
+    const { getAllByTestId } = await render(
       <>
         <VideoTile item={item} />
         <VideoTile item={other} />
@@ -181,16 +181,16 @@ describe('VideoTile — gestures', () => {
     );
 
     const tiles = getAllByTestId('video-tile');
-    fireEvent(tiles[0], 'press');
-    fireEvent(tiles[1], 'press');
+    await fireEvent(tiles[0], 'press');
+    await fireEvent(tiles[1], 'press');
 
     expect(mockPush).toHaveBeenCalledTimes(2);
   });
 });
 
 describe('VideoTile — context menu actions', () => {
-  it('offers Favorite / Download / Follow by default', () => {
-    render(<VideoTile item={item} />);
+  it('offers Favorite / Download / Follow by default', async () => {
+    await render(<VideoTile item={item} />);
 
     const ids = mockMenu.lastProps.actions?.map((a) => a.id);
     expect(ids).toEqual(['favorite', 'download', 'follow']);
@@ -198,26 +198,26 @@ describe('VideoTile — context menu actions', () => {
     expect(titles).toEqual(['Favorite', 'Download', 'Follow author']);
   });
 
-  it('reflects favorited state in the Favorite action', () => {
+  it('reflects favorited state in the Favorite action', async () => {
     useFavoritesStore.setState({
       favorites: [{ id: '1', slug: 's', title: 't', url: '', thumbnail: '', addedAt: 0 }],
     });
 
-    render(<VideoTile item={{ id: '1', slug: 's', title: 'Fav', thumbnail: '' }} />);
+    await render(<VideoTile item={{ id: '1', slug: 's', title: 'Fav', thumbnail: '' }} />);
 
     const favoriteAction = mockMenu.lastProps.actions?.find((a) => a.id === 'favorite');
     expect(favoriteAction?.title).toBe('Unfavorite');
   });
 
-  it("adds the item to favorites when the 'favorite' action is dispatched", () => {
-    render(<VideoTile item={item} />);
+  it("adds the item to favorites when the 'favorite' action is dispatched", async () => {
+    await render(<VideoTile item={item} />);
 
     mockMenu.lastProps.onPressAction?.({ nativeEvent: { event: 'favorite' } });
 
     expect(useFavoritesStore.getState().favorites.some((f) => f.id === '1')).toBe(true);
   });
 
-  it('offers Resume download (enabled) when the task is errored or paused', () => {
+  it('offers Resume download (enabled) when the task is errored or paused', async () => {
     useActiveDownloadsStore.setState({
       tasks: {
         '1': {
@@ -230,7 +230,7 @@ describe('VideoTile — context menu actions', () => {
         },
       },
     });
-    render(<VideoTile item={item} />);
+    await render(<VideoTile item={item} />);
     const errored = mockMenu.lastProps.actions?.find((a) => a.id === 'download');
     expect(errored?.title).toBe('Resume download');
     expect(errored?.attributes?.disabled).toBeUndefined();
@@ -247,13 +247,13 @@ describe('VideoTile — context menu actions', () => {
         },
       },
     });
-    render(<VideoTile item={item} />);
+    await render(<VideoTile item={item} />);
     const paused = mockMenu.lastProps.actions?.find((a) => a.id === 'download');
     expect(paused?.title).toBe('Resume download');
     expect(paused?.attributes?.disabled).toBeUndefined();
   });
 
-  it('disables Download while the task is actively downloading', () => {
+  it('disables Download while the task is actively downloading', async () => {
     useActiveDownloadsStore.setState({
       tasks: {
         '1': {
@@ -266,14 +266,14 @@ describe('VideoTile — context menu actions', () => {
         },
       },
     });
-    render(<VideoTile item={item} />);
+    await render(<VideoTile item={item} />);
 
     const downloadAction = mockMenu.lastProps.actions?.find((a) => a.id === 'download');
     expect(downloadAction?.title).toBe('Downloading…');
     expect(downloadAction?.attributes?.disabled).toBe(true);
   });
 
-  it("resumes (retries) instead of starting fresh when a paused task's download is dispatched", () => {
+  it("resumes (retries) instead of starting fresh when a paused task's download is dispatched", async () => {
     useActiveDownloadsStore.setState({
       tasks: {
         '1': {
@@ -286,7 +286,7 @@ describe('VideoTile — context menu actions', () => {
         },
       },
     });
-    render(<VideoTile item={item} />);
+    await render(<VideoTile item={item} />);
 
     mockMenu.lastProps.onPressAction?.({ nativeEvent: { event: 'download' } });
 

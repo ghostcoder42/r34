@@ -64,28 +64,28 @@ beforeEach(() => {
 });
 
 describe('useUpdateCheck', () => {
-  it('seeds the hint from the persisted last check so it survives restarts', () => {
+  it('seeds the hint from the persisted last check so it survives restarts', async () => {
     mockUpdater.persisted = { version: '0.4.0', title: 'v0.4.0', notes: '' };
     // The automatic fetch never resolves — the seed alone must light the row.
     mockUpdater.fetchLatestRelease.mockImplementation(() => new Promise(() => {}));
 
-    const { result } = renderHook(() => useUpdateCheck('0.3.0'));
+    const { result } = await renderHook(() => useUpdateCheck('0.3.0'));
 
     expect(result.current.newerRelease?.version).toBe('0.4.0');
   });
 
-  it('does not seed a persisted hint that no longer beats the installed version', () => {
+  it('does not seed a persisted hint that no longer beats the installed version', async () => {
     // User already updated past the persisted find (e.g. installed manually).
     mockUpdater.persisted = { version: '0.3.0', title: 'v0.3.0', notes: '' };
     mockUpdater.fetchLatestRelease.mockImplementation(() => new Promise(() => {}));
 
-    const { result } = renderHook(() => useUpdateCheck('0.3.0'));
+    const { result } = await renderHook(() => useUpdateCheck('0.3.0'));
 
     expect(result.current.newerRelease).toBeNull();
   });
 
   it('persists every successful check, up to date or not', async () => {
-    const { result } = renderHook(() => useUpdateCheck('0.4.0')); // same as latest
+    const { result } = await renderHook(() => useUpdateCheck('0.4.0')); // same as latest
     await waitFor(() => expect(result.current.checking).toBe(false));
 
     expect(mockUpdater.saveLastKnownRelease).toHaveBeenCalledWith(mockUpdater.release);
@@ -94,14 +94,14 @@ describe('useUpdateCheck', () => {
   it('skips the automatic check when the daily throttle is not due', async () => {
     mockCheckStore.autoCheckDue = false;
 
-    const { result } = renderHook(() => useUpdateCheck('0.3.0'));
+    const { result } = await renderHook(() => useUpdateCheck('0.3.0'));
 
     expect(mockUpdater.fetchLatestRelease).not.toHaveBeenCalled();
     expect(result.current.checking).toBe(false);
   });
 
   it('checks automatically on mount and only flags the row (no dialogs)', async () => {
-    const { result } = renderHook(() => useUpdateCheck('0.3.0'));
+    const { result } = await renderHook(() => useUpdateCheck('0.3.0'));
 
     await waitFor(() => expect(result.current.checking).toBe(false));
     expect(result.current.newerRelease?.version).toBe('0.4.0');
@@ -113,7 +113,7 @@ describe('useUpdateCheck', () => {
   it('stays completely silent when the automatic check fails', async () => {
     mockUpdater.error = new Error('Network request failed');
 
-    const { result } = renderHook(() => useUpdateCheck('0.3.0'));
+    const { result } = await renderHook(() => useUpdateCheck('0.3.0'));
 
     await waitFor(() => expect(result.current.checking).toBe(false));
     expect(result.current.newerRelease).toBeNull();
@@ -122,7 +122,7 @@ describe('useUpdateCheck', () => {
   });
 
   it('manual check with a new release opens the in-app dialog, not an Alert', async () => {
-    const { result } = renderHook(() => useUpdateCheck('0.3.0'));
+    const { result } = await renderHook(() => useUpdateCheck('0.3.0'));
     await waitFor(() => expect(result.current.checking).toBe(false));
 
     await act(async () => {
@@ -132,7 +132,9 @@ describe('useUpdateCheck', () => {
     expect(Alert.alert).not.toHaveBeenCalled();
     expect(result.current.pendingRelease?.version).toBe('0.4.0');
 
-    act(() => result.current.dismissUpdateDialog());
+    await act(async () => {
+      result.current.dismissUpdateDialog();
+    });
     expect(result.current.pendingRelease).toBeNull();
   });
 
@@ -144,7 +146,7 @@ describe('useUpdateCheck', () => {
       releaseUrl: 'https://github.com/ghostcoder42/r34/releases/tag/v0.4.0',
       apkUrl: 'https://github.com/ghostcoder42/r34/releases/download/v0.4.0/r34-0.4.0.apk',
     };
-    const { result } = renderHook(() => useUpdateCheck('0.3.0'));
+    const { result } = await renderHook(() => useUpdateCheck('0.3.0'));
     await waitFor(() => expect(result.current.checking).toBe(false));
 
     setPlatform('android');
@@ -158,7 +160,7 @@ describe('useUpdateCheck', () => {
 
   it('manual check toasts when already up to date', async () => {
     // Same version installed as the latest release.
-    const { result } = renderHook(() => useUpdateCheck('0.4.0'));
+    const { result } = await renderHook(() => useUpdateCheck('0.4.0'));
     await waitFor(() => expect(result.current.checking).toBe(false));
 
     await act(async () => {
@@ -171,7 +173,7 @@ describe('useUpdateCheck', () => {
   });
 
   it('manual check shows a failure dialog with the classified cause', async () => {
-    const { result } = renderHook(() => useUpdateCheck('0.3.0'));
+    const { result } = await renderHook(() => useUpdateCheck('0.3.0'));
     await waitFor(() => expect(result.current.checking).toBe(false));
     mockUpdater.error = new Error('Failed to fetch release info: 503');
 
@@ -194,7 +196,7 @@ describe('useUpdateCheck', () => {
         })
     );
 
-    const { result } = renderHook(() => useUpdateCheck('0.3.0'));
+    const { result } = await renderHook(() => useUpdateCheck('0.3.0'));
     // Mount fired the automatic check; tapping while it runs must not start
     // a second one.
     await act(async () => {

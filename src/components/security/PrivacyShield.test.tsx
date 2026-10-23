@@ -17,10 +17,10 @@ beforeEach(() => {
 });
 
 describe('PrivacyShield', () => {
-  it('calls CaptureProtection.prevent when hidePreview is on', () => {
+  it('calls CaptureProtection.prevent when hidePreview is on', async () => {
     (useSecuritySettings as jest.Mock).mockReturnValue({ hidePreview: true });
 
-    render(
+    await render(
       <PrivacyShield>
         <View />
       </PrivacyShield>
@@ -34,10 +34,10 @@ describe('PrivacyShield', () => {
     expect(CaptureProtection.allow).not.toHaveBeenCalled();
   });
 
-  it('calls CaptureProtection.allow when hidePreview is off', () => {
+  it('calls CaptureProtection.allow when hidePreview is off', async () => {
     (useSecuritySettings as jest.Mock).mockReturnValue({ hidePreview: false });
 
-    render(
+    await render(
       <PrivacyShield>
         <View />
       </PrivacyShield>

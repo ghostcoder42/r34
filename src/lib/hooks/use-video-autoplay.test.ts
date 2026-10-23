@@ -27,19 +27,21 @@ beforeEach(() => {
 });
 
 describe('useVideoAutoplay', () => {
-  it('defaults to on before the user ever touches the toggle', () => {
-    const { result } = renderHook(() => useVideoAutoplay());
+  it('defaults to on before the user ever touches the toggle', async () => {
+    const { result } = await renderHook(() => useVideoAutoplay());
 
     expect(result.current.autoplayEnabled).toBe(true);
   });
 
-  it('reflects the stored choice and updates it', () => {
+  it('reflects the stored choice and updates it', async () => {
     mockMMKV.value = false;
-    const { result } = renderHook(() => useVideoAutoplay());
+    const { result } = await renderHook(() => useVideoAutoplay());
 
     expect(result.current.autoplayEnabled).toBe(false);
 
-    act(() => result.current.setAutoplayEnabled(true));
+    await act(async () => {
+      result.current.setAutoplayEnabled(true);
+    });
     expect(mockMMKV.value).toBe(true);
   });
 });
