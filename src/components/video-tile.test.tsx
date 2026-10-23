@@ -217,6 +217,42 @@ describe('VideoTile — context menu actions', () => {
     expect(useFavoritesStore.getState().favorites.some((f) => f.id === '1')).toBe(true);
   });
 
+  it('swallows a tap landing right after a menu action (popup-dismiss ghost)', async () => {
+    // Reproduces the device bug: choosing a menu item starts the popup's
+    // dismiss animation; while it plays the popup is visible but not
+    // touchable, so a fast follow-up tap falls through onto a tile and used
+    // to open its video.
+    const { getByTestId } = await render(<VideoTile item={item} />);
+
+    mockMenu.lastProps.onPressAction?.({ nativeEvent: { event: 'favorite' } });
+    await fireEvent.press(getByTestId('video-tile'));
+    expect(mockPush).not.toHaveBeenCalled();
+
+    // After the shield window the same tap navigates again.
+    const nowSpy = jest.spyOn(Date, 'now');
+    try {
+      nowSpy.mockReturnValue(Date.now() + 700);
+      await fireEvent.press(getByTestId('video-tile'));
+      expect(mockPush).toHaveBeenCalledTimes(1);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  it('shields a NEIGHBORING tile too — the ghost lands under the menu', async () => {
+    const first = await render(<VideoTile item={item} />);
+    const second = await render(<VideoTile item={{ ...item, id: '2' }} />);
+
+    // Menu interaction on tile 1…
+    mockMenu.lastProps.onPressAction?.({ nativeEvent: { event: 'favorite' } });
+    // …ghost tap falls through onto tile 2 (a different instance).
+    await fireEvent.press(second.getByTestId('video-tile'));
+    expect(mockPush).not.toHaveBeenCalled();
+
+    // Sanity: tile 1's own tree is unaffected by the shield's expiry reset.
+    expect(first.getByTestId('video-tile')).toBeTruthy();
+  });
+
   it('offers Resume download (enabled) when the task is errored or paused', async () => {
     useActiveDownloadsStore.setState({
       tasks: {

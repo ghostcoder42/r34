@@ -6,7 +6,11 @@ import { Platform } from 'react-native';
 import { Image, Pressable, Text, View } from '@/components/ui';
 import { retryDownload } from '@/lib/download/download-video';
 import { useVideoActions } from '@/lib/hooks/use-video-actions';
-import { tryBeginVideoOpen } from '@/lib/navigation/open-guard';
+import {
+  isGhostTapAfterMenu,
+  markMenuInteraction,
+  tryBeginVideoOpen,
+} from '@/lib/navigation/open-guard';
 import { useActiveDownload } from '@/lib/stores/active-downloads-store';
 
 /**
@@ -34,7 +38,6 @@ type Props = {
  * menu itself is opened natively by MenuView, so this handler does nothing.
  */
 const suppressPressOnLongPress = () => {};
-
 /**
  * A responsive video tile used by the home/search/library/favorites grids.
  * Fills its FlashList cell width and keeps a 16:9 thumbnail. Short-tap opens
@@ -57,6 +60,7 @@ function VideoTileImpl({ item, children }: Props): React.ReactElement {
   const router = useRouter();
 
   const handleAction = ({ nativeEvent }: { nativeEvent: { event: string } }) => {
+    markMenuInteraction();
     switch (nativeEvent.event) {
       case 'favorite': {
         toggleFavorite();
@@ -105,6 +109,9 @@ function VideoTileImpl({ item, children }: Props): React.ReactElement {
   ];
 
   const openDetail = () => {
+    // Ghost-tap shield lives in open-guard (shared across tiles — the ghost
+    // usually lands on a NEIGHBORING tile under the dismissing menu).
+    if (isGhostTapAfterMenu()) return;
     // The push is synchronous, but while the open is still in flight (screen
     // not yet focused) repeat taps on this card are swallowed — each extra
     // push would stack another post screen with its own native player.
@@ -119,7 +126,12 @@ function VideoTileImpl({ item, children }: Props): React.ReactElement {
     : '';
 
   return (
-    <MenuView shouldOpenOnLongPress actions={actions} onPressAction={handleAction}>
+    <MenuView
+      shouldOpenOnLongPress
+      actions={actions}
+      onPressAction={handleAction}
+      onCloseMenu={markMenuInteraction}
+    >
       <Pressable
         onPress={openDetail}
         onLongPress={Platform.OS === 'android' ? suppressPressOnLongPress : undefined}
