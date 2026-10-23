@@ -25,6 +25,11 @@ module.exports.default = Animated;
 module.exports.useSharedValue = (v: unknown) => ({ value: v });
 module.exports.useAnimatedStyle = (cb: () => unknown) => cb();
 module.exports.useAnimatedProps = (cb: () => unknown) => cb();
+module.exports.useAnimatedScrollHandler = (config: {
+  onScroll?: (e: { contentOffset: { y: number } }) => void;
+}) => (e?: { contentOffset?: { y?: number } }) => {
+  config?.onScroll?.({ contentOffset: { y: e?.contentOffset?.y ?? 0 } });
+};
 module.exports.withTiming = (v: unknown) => v;
 module.exports.withSpring = (v: unknown) => v;
 module.exports.withDelay = (_d: unknown, v: unknown) => v;
