@@ -28,8 +28,8 @@ describe('useVideoDownload', () => {
     jest.clearAllMocks();
   });
 
-  it('returns initial state', () => {
-    const { result } = renderHook(() =>
+  it('returns initial state', async () => {
+    const { result } = await renderHook(() =>
       useVideoDownload({
         videoUrl: 'https://example.com/video.mp4',
         videoId: '123',
@@ -42,7 +42,7 @@ describe('useVideoDownload', () => {
   });
 
   it('does not download when videoUrl is empty', async () => {
-    const { result } = renderHook(() =>
+    const { result } = await renderHook(() =>
       useVideoDownload({
         videoUrl: '',
         videoId: '123',
@@ -55,7 +55,7 @@ describe('useVideoDownload', () => {
   });
 
   it('persists uploader info in the saved metadata', async () => {
-    const { result } = renderHook(() =>
+    const { result } = await renderHook(() =>
       useVideoDownload({
         videoUrl: 'https://example.com/video.mp4',
         videoId: '123_720p',

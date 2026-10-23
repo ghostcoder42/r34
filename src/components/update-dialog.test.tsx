@@ -22,14 +22,16 @@ const noop = () => {};
 afterEach(cleanup);
 
 describe('UpdateDialog', () => {
-  it('renders nothing without a release', () => {
-    render(<UpdateDialog release={null} currentVersion="0.3.0" onClose={noop} onDownload={noop} />);
+  it('renders nothing without a release', async () => {
+    await render(
+      <UpdateDialog release={null} currentVersion="0.3.0" onClose={noop} onDownload={noop} />
+    );
 
     expect(screen.queryByText(/0\.4\.0/)).toBeNull();
   });
 
-  it('shows version, message, meta line and notes', () => {
-    render(
+  it('shows version, message, meta line and notes', async () => {
+    await render(
       <UpdateDialog release={release} currentVersion="0.3.0" onClose={noop} onDownload={noop} />
     );
 
@@ -44,7 +46,7 @@ describe('UpdateDialog', () => {
     expect(screen.getByText(/• fix one/)).toBeTruthy();
   });
 
-  it('hides the meta line and notes when absent', () => {
+  it('hides the meta line and notes when absent', async () => {
     const minimal: ReleaseInfo = {
       version: '0.4.0',
       title: 'v0.4.0',
@@ -53,7 +55,7 @@ describe('UpdateDialog', () => {
       apkUrl: null,
     };
 
-    render(
+    await render(
       <UpdateDialog release={minimal} currentVersion="0.3.0" onClose={noop} onDownload={noop} />
     );
 
@@ -61,11 +63,11 @@ describe('UpdateDialog', () => {
     expect(screen.queryByText(/What's new:/)).toBeNull();
   });
 
-  it('invokes onClose and onDownload from the buttons and backdrop', () => {
+  it('invokes onClose and onDownload from the buttons and backdrop', async () => {
     const onClose = jest.fn();
     const onDownload = jest.fn();
 
-    render(
+    await render(
       <UpdateDialog
         release={release}
         currentVersion="0.3.0"

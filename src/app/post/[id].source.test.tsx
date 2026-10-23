@@ -52,8 +52,23 @@ jest.mock('react-native-edge-to-edge', () => ({
   SystemBars: () => null,
 }));
 
+// SDK 58: transitively loaded modules (e.g. expo-localization via i18n) pull
+// requireNativeModule from 'expo' at import time — the mock must provide it.
 jest.mock('expo', () => ({
   useEvent: (_player: unknown, _event: string, initial: { isPlaying: boolean }) => initial,
+  requireOptionalNativeModule: () => null,
+  requireNativeModule: () =>
+    new Proxy(
+      {},
+      {
+        get: (_target, prop) =>
+          prop === 'getLocales'
+            ? () => []
+            : () => {
+                throw new Error(`native module method ${String(prop)} unavailable in tests`);
+              },
+      }
+    ),
 }));
 
 // Per-test network detail returned by useVideoDetail.
@@ -165,7 +180,7 @@ describe('Post screen — player source selection', () => {
     mockDownloadState.existingFiles.add('v1_480p');
     seedDownload('480p');
 
-    setup(<Post />);
+    await setup(<Post />);
 
     await waitFor(() => expect(lastPlayerSource()).toBe(LOCAL_480P));
   });
@@ -173,12 +188,12 @@ describe('Post screen — player source selection', () => {
   it('switches to the local file when the download store hydrates after the network detail', async () => {
     // Store starts empty (e.g. hydrate still in flight) so the player first
     // streams the network 720p URL…
-    setup(<Post />);
+    await setup(<Post />);
     await waitFor(() => expect(lastPlayerSource()).toBe('https://example.com/v1_720p.mp4'));
 
     // …then the downloaded entry appears and must take over the player.
     mockDownloadState.existingFiles.add('v1_480p');
-    act(() => {
+    await act(async () => {
       seedDownload('480p');
     });
 
@@ -198,7 +213,7 @@ describe('Post screen — player source selection', () => {
       categories: [],
     };
 
-    setup(<Post />);
+    await setup(<Post />);
 
     await waitFor(() => expect(lastPlayerSource()).toBe('file:///documents/videos/v1_360p.mp4'));
   });
@@ -207,12 +222,12 @@ describe('Post screen — player source selection', () => {
     mockDownloadState.existingFiles.add('v1_480p');
     seedDownload('480p');
 
-    const { rerender } = setup(<Post />);
+    const { rerender } = await setup(<Post />);
     await waitFor(() => expect(lastPlayerSource()).toBe(LOCAL_480P));
 
     // A later network refresh delivering new format objects must not move the
     // player back to a network URL.
-    act(() => {
+    await act(async () => {
       mockDetailState.data = {
         ...(mockDetailState.data as object),
         formats: NETWORK_FORMATS,
@@ -227,7 +242,7 @@ describe('Post screen — player source selection', () => {
     mockDownloadState.existingFiles.add('v1_480p');
     seedDownload('480p');
 
-    const { user } = setup(<Post />);
+    const { user } = await setup(<Post />);
     await waitFor(() => expect(lastPlayerSource()).toBe(LOCAL_480P));
 
     await user.press(screen.getByText('720p'));
@@ -238,7 +253,7 @@ describe('Post screen — player source selection', () => {
 
 describe('Post screen — autoplay', () => {
   it('starts playback automatically once a source is available', async () => {
-    setup(<Post />);
+    await setup(<Post />);
 
     await waitFor(() => expect(lastPlayerSource()).toBe('https://example.com/v1_720p.mp4'));
     expect(mockPlayer.play).toHaveBeenCalled();
@@ -247,7 +262,7 @@ describe('Post screen — autoplay', () => {
   it('does not start playback when autoplay is turned off', async () => {
     mockAutoplay.enabled = false;
 
-    setup(<Post />);
+    await setup(<Post />);
 
     await waitFor(() => expect(lastPlayerSource()).toBe('https://example.com/v1_720p.mp4'));
     expect(mockPlayer.play).not.toHaveBeenCalled();
@@ -274,7 +289,7 @@ describe('Post screen — dead page toast', () => {
     notFound.status = 404;
     mockDetailState.error = notFound;
 
-    setup(<Post />);
+    await setup(<Post />);
 
     await waitFor(() => expect(showMessage).toHaveBeenCalledTimes(1));
     expect(lastToastMessage()).toBe(EN_REMOVED);
@@ -289,7 +304,7 @@ describe('Post screen — dead page toast', () => {
     mockDetailState.data = null;
     mockDetailState.error = new Error('Network request failed'); // no status attached
 
-    setup(<Post />);
+    await setup(<Post />);
 
     await waitFor(() => expect(showMessage).toHaveBeenCalledTimes(1));
     expect(lastToastMessage()).toBe(EN_UNREACHABLE);
@@ -308,14 +323,14 @@ describe('Post screen — dead page toast', () => {
       categories: [],
     };
 
-    setup(<Post />);
+    await setup(<Post />);
 
     await waitFor(() => expect(showMessage).toHaveBeenCalledTimes(1));
     expect(lastToastMessage()).toBe(EN_REMOVED);
   });
 
   it('does not toast for a healthy page', async () => {
-    setup(<Post />);
+    await setup(<Post />);
 
     await waitFor(() => expect(lastPlayerSource()).toBe('https://example.com/v1_720p.mp4'));
     expect(showMessage).not.toHaveBeenCalled();

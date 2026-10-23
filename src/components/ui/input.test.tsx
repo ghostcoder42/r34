@@ -7,47 +7,47 @@ import { Input } from './input';
 afterEach(cleanup);
 
 describe('Input component ', () => {
-  it('renders correctly ', () => {
-    render(<Input testID="input" />);
+  it('renders correctly ', async () => {
+    await render(<Input testID="input" />);
     expect(screen.getByTestId('input')).toBeOnTheScreen();
   });
-  it('should use the right direction for rtl layout', () => {
+  it('should use the right direction for rtl layout', async () => {
     I18nManager.isRTL = true;
-    render(<Input testID="input" />);
+    await render(<Input testID="input" />);
     expect(screen.getByTestId('input')).toHaveStyle({
       writingDirection: 'rtl',
     });
   });
 
-  it('should use the right direction for ltr layout', () => {
+  it('should use the right direction for ltr layout', async () => {
     I18nManager.isRTL = false;
-    render(<Input testID="input" />);
+    await render(<Input testID="input" />);
     expect(screen.getByTestId('input')).toHaveStyle({
       writingDirection: 'ltr',
     });
   });
 
-  it('should render the placeholder correctly ', () => {
-    render(<Input testID="input" placeholder="Enter your username" />);
+  it('should render the placeholder correctly ', async () => {
+    await render(<Input testID="input" placeholder="Enter your username" />);
     expect(screen.getByTestId('input')).toBeOnTheScreen();
     expect(screen.getByPlaceholderText('Enter your username')).toBeOnTheScreen();
   });
 
-  it('should render the label correctly ', () => {
-    render(<Input testID="input" label="Username" />);
+  it('should render the label correctly ', async () => {
+    await render(<Input testID="input" label="Username" />);
     expect(screen.getByTestId('input')).toBeOnTheScreen();
 
     expect(screen.getByTestId('input-label')).toHaveTextContent('Username');
   });
 
-  it('should render the error message correctly ', () => {
-    render(<Input testID="input" error="This is an error message" />);
+  it('should render the error message correctly ', async () => {
+    await render(<Input testID="input" error="This is an error message" />);
     expect(screen.getByTestId('input')).toBeOnTheScreen();
 
     expect(screen.getByTestId('input-error')).toHaveTextContent('This is an error message');
   });
-  it('should render the label, error message & placeholder correctly ', () => {
-    render(
+  it('should render the label, error message & placeholder correctly ', async () => {
+    await render(
       <Input
         testID="input"
         label="Username"
@@ -65,7 +65,7 @@ describe('Input component ', () => {
 
   it('should trigger onFocus event correctly ', async () => {
     const onFocus = jest.fn();
-    const { user } = setup(<Input testID="input" onFocus={onFocus} />);
+    const { user } = await setup(<Input testID="input" onFocus={onFocus} />);
 
     const input = screen.getByTestId('input');
     await user.type(input, 'test text');
@@ -74,7 +74,7 @@ describe('Input component ', () => {
 
   it('should trigger onBlur event correctly ', async () => {
     const onBlur = jest.fn();
-    const { user } = setup(<Input testID="input" onBlur={onBlur} />);
+    const { user } = await setup(<Input testID="input" onBlur={onBlur} />);
 
     const input = screen.getByTestId('input');
     await user.type(input, 'test text');
@@ -82,15 +82,15 @@ describe('Input component ', () => {
   });
   it('should trigger onChangeText event correctly', async () => {
     const onChangeText = jest.fn();
-    const { user } = setup(<Input testID="input" onChangeText={onChangeText} />);
+    const { user } = await setup(<Input testID="input" onChangeText={onChangeText} />);
 
     const input = screen.getByTestId('input');
     await user.type(input, '123456789');
     expect(onChangeText).toHaveBeenCalledTimes(9); // every character is a change event
     expect(onChangeText).toHaveBeenCalledWith('123456789');
   });
-  it('should be disabled when disabled prop is true', () => {
-    render(<Input testID="input" disabled={true} />);
+  it('should be disabled when disabled prop is true', async () => {
+    await render(<Input testID="input" disabled={true} />);
 
     const input = screen.getByTestId('input');
     expect(input.props.disabled).toBe(true);

@@ -9,11 +9,16 @@
  * delta gates fire on every touch event during fast drags and flood the JS
  * thread, making the display lag behind the player.
  */
-import { Gesture, type GestureDetector } from 'react-native-gesture-handler';
+
+import type { GestureType, LegacyComposedGesture } from 'react-native-gesture-handler';
+import { Gesture } from 'react-native-gesture-handler';
 import { type SharedValue, runOnJS, useSharedValue } from 'react-native-reanimated';
 
-/** Whatever GestureDetector accepts (plain or composed gestures). */
-export type AnyGesture = React.ComponentProps<typeof GestureDetector>['gesture'];
+/** Whatever the (legacy) GestureDetector accepts — RNGH v3's detector is a
+ *  generic union of legacy + native props, so ComponentProps no longer
+ *  resolves a usable `gesture` field; spell the legacy union out instead. */
+export type AnyGesture = LegacyComposedGesture | GestureType;
+
 import { useMemo } from 'react';
 import {
   AXIS_H,

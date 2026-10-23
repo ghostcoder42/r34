@@ -97,7 +97,7 @@ describe('Home screen — fetch error resilience', () => {
     error.status = 502;
     mockQueryState.error = error;
 
-    render(<Home />);
+    await render(<Home />);
 
     // The feed item is still on screen; the full error page is not.
     expect(await screen.findByText('Loaded Video')).toBeTruthy();
@@ -109,7 +109,7 @@ describe('Home screen — fetch error resilience', () => {
     expect(call.position).toBe('center');
   });
 
-  it('shows the full error screen (no toast) when the feed never loaded', () => {
+  it('shows the full error screen (no toast) when the feed never loaded', async () => {
     mockQueryState.data = undefined;
     mockQueryState.isError = true;
     const error = new Error(
@@ -118,7 +118,7 @@ describe('Home screen — fetch error resilience', () => {
     error.status = 502;
     mockQueryState.error = error;
 
-    render(<Home />);
+    await render(<Home />);
 
     // The full error state carries the classified, localized message instead
     // of a generic one (en locale in tests).

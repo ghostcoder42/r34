@@ -3,7 +3,8 @@ import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import * as React from 'react';
 import { Alert, ScrollView, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import { Swipeable } from 'react-native-gesture-handler';
+// RNGH v3: Swipeable moved out of the main export — now a subpath module.
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 
 import { FocusAwareStatusBar } from '@/components/ui';
 import { Trash } from '@/components/ui/icons';
@@ -76,7 +77,7 @@ function DownloadRow({
   const t = useTranslate();
   const baseId = baseIdOf(item.videoId);
   const isFav = useFavoritesStore((s) => s.favorites.some((f) => f.id === baseId));
-  const swipeableRef = React.useRef<Swipeable>(null);
+  const swipeableRef = React.useRef<React.ComponentRef<typeof ReanimatedSwipeable>>(null);
 
   const confirmRemove = () => {
     swipeableRef.current?.close();
@@ -96,7 +97,11 @@ function DownloadRow({
   );
 
   return (
-    <Swipeable ref={swipeableRef} renderRightActions={renderRightActions} rightThreshold={40}>
+    <ReanimatedSwipeable
+      ref={swipeableRef}
+      renderRightActions={renderRightActions}
+      rightThreshold={40}
+    >
       <Link
         href={{ pathname: '/post/[id]', params: { id: baseId, slug: item.slug ?? '' } }}
         asChild
@@ -132,7 +137,7 @@ function DownloadRow({
           </View>
         </TouchableOpacity>
       </Link>
-    </Swipeable>
+    </ReanimatedSwipeable>
   );
 }
 
@@ -381,7 +386,7 @@ const TABS: {
 export default function Library(): React.ReactElement {
   const t = useTranslate();
   const [activeTab, setActiveTab] = React.useState<Tab>('history');
-  const pagerRef = React.useRef<ScrollView>(null);
+  const pagerRef = React.useRef<React.ComponentRef<typeof ScrollView>>(null);
   const { width } = useWindowDimensions();
 
   const goToPage = React.useCallback(
