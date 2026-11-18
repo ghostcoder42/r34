@@ -32,7 +32,8 @@ i18n.use(initReactI18next).init({
   resources,
   lng: detectLanguage(),
   fallbackLng: 'en',
-  compatibilityJSON: 'v4', // By default React Native projects does not support Intl
+  // compatibilityJSON was dropped in i18next 27 (its v4-compat JSON format
+  // is the only format now; RN's missing Intl is no longer worked around here).
 
   // allows integrating dynamic values into translations.
   interpolation: {

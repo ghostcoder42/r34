@@ -119,6 +119,9 @@ export function useUpdateCheck(currentVersion: string): UseUpdateCheck {
 }
 
 function translate(key: string, options?: Record<string, unknown>): string {
-  const t = i18n.t.bind(i18n) as (key: string, options?: Record<string, unknown>) => string;
+  const t = i18n.t.bind(i18n) as unknown as (
+    key: string,
+    options?: Record<string, unknown>
+  ) => string;
   return t(key, options ?? {});
 }

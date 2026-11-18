@@ -77,7 +77,10 @@ const MESSAGE_KEYS: Record<FetchErrorKind, string> = {
 export function fetchErrorMessage(error: unknown): string {
   const kind = classifyFetchError(error);
   const status = (error as (Error & { status?: number }) | null)?.status;
-  const translate = i18n.t.bind(i18n) as (key: string, options?: Record<string, unknown>) => string;
+  const translate = i18n.t.bind(i18n) as unknown as (
+    key: string,
+    options?: Record<string, unknown>
+  ) => string;
   return translate(MESSAGE_KEYS[kind], {
     ...(typeof status === 'number' ? { status: String(status) } : {}),
   });

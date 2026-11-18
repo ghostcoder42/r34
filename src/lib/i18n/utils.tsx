@@ -23,7 +23,7 @@ type TranslateOptions = Record<string, string | number>;
  */
 export function useTranslate() {
   const { t } = useTranslation();
-  const tt = t as (key: string, options?: TranslateOptions) => string;
+  const tt = t as unknown as (key: string, options?: TranslateOptions) => string;
   return useCallback((key: TxKeyPath, options?: TranslateOptions) => tt(key, options ?? {}), [tt]);
 }
 
