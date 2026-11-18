@@ -124,17 +124,22 @@ function withIosAlternateIcons(config) {
         continue;
       }
       fs.copyFileSync(src, dest);
+      // The pbxproj resolves resource paths from the ios/ root (SDK 58
+      // template groups), so reference the file through the project dir —
+      // a bare basename made xcodebuild look for ios/icon-x.png while the
+      // file lives at ios/<projdir>/icon-x.png.
+      const refPath = path.posix.join(xcodeproj.replace(/\.xcodeproj$/, ''), basename);
       // Avoid duplicate references on repeat prebuild (--no-clean) runs.
       const refs = proj.pbxFileReferenceSection();
-      const alreadyAdded = Object.keys(refs).some((key) => refs[key].path === basename);
+      const alreadyAdded = Object.keys(refs).some((key) => refs[key].path === refPath);
       if (!alreadyAdded) {
         // addResourceFile can throw on a freshly-cleaned project before the
         // resource build phase is fully wired up; swallow so a full prebuild
         // still completes (and with it, local-module autolinking on Android).
         try {
-          proj.addResourceFile(basename);
+          proj.addResourceFile(refPath);
         } catch (e) {
-          console.warn(`[with-app-icons] could not add resource ${basename}: ${e.message}`);
+          console.warn(`[with-app-icons] could not add resource ${refPath}: ${e.message}`);
         }
       }
     }
