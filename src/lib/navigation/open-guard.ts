@@ -11,6 +11,19 @@
  */
 let openingVideoId: string | null = null;
 
+/**
+ * Ghost-tap shield after a context-menu interaction, MODULE-scoped on
+ * purpose: the popup menu usually covers NEIGHBORING tiles, and after an
+ * item is chosen the popup's dismiss animation (~150-250ms) leaves it
+ * visible but no longer touchable — a fast follow-up tap then falls through
+ * onto whatever tile sits underneath (reproduced via double-tap on an
+ * emulator: menu action on tile A → 158ms → tile B's onPress fired). Every
+ * tile shares one shield so the ghost is swallowed no matter which tile it
+ * lands on.
+ */
+const MENU_GHOST_SHIELD_MS = 600;
+let menuInteractedAt = 0;
+
 /** Returns true when this video's open may proceed; false = already opening. */
 export function tryBeginVideoOpen(videoId: string): boolean {
   if (openingVideoId === videoId) return false;
@@ -23,7 +36,18 @@ export function endVideoOpen(): void {
   openingVideoId = null;
 }
 
+/** Stamp "a menu interaction just happened" — starts the ghost shield. */
+export function markMenuInteraction(): void {
+  menuInteractedAt = Date.now();
+}
+
+/** True while a tap should be treated as a popup-dismiss ghost. */
+export function isGhostTapAfterMenu(now: number = Date.now()): boolean {
+  return now - menuInteractedAt < MENU_GHOST_SHIELD_MS;
+}
+
 /** Test hook — clears any in-flight open. */
 export function resetOpenGuard(): void {
   openingVideoId = null;
+  menuInteractedAt = 0;
 }
